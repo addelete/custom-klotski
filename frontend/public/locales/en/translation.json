@@ -1,0 +1,80 @@
+{
+  "GameInfoDialog": {
+    "filterConditions": "Filter Conditions",
+    "gameInfo": "Game Info",
+    "name": "Name",
+    "pleaseInputName": "Please input name",
+    "tags": "Tags",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "MyConfirm": {
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "TagSelect": {
+    "add": "Add",
+    "select": "Select",
+    "createNewTag": "Create New Tag",
+    "tagAlreadyExists": "Tag already exists",
+    "pleaseInputTagName": "Please input tag name",
+    "cancel": "Cancel"
+  },
+  "GameDesigner": {
+    "designGame": "Design Game",
+    "rows": "Rows",
+    "cols": "Cols",
+    "solve": "Solve",
+    "play": "Play",
+    "save": "Save",
+    "noPiece": "No Piece",
+    "noKingPiece": "No King Piece",
+    "saveGameSuccess": "Save Success",
+    "createGameSuccess": "Create Success",
+    "gameAlreadyExists": "Fail to create, already had the same game with the name：{{name}}",
+    "failedToSaveGame": "Failed to save game",
+    "noSolution": "No Solution",
+    "setAsKing": "Set As King Piece",
+    "toggleEditing": "Toggle Editing Mode",
+    "remove": "Remove",
+    "tips1": "Click on a board space to create or expand a piece, click outside the board to exit the piece editing mode.",
+    "tips2": "In piece editing mode, hold down the <code>Alt</code> key or the Mac's  <code>Option</code> key to crop the pieces.",
+    "tips3": "Right-click on a piece to open the menu.",
+    "tips4": "After setting up the King's pieces, you can adjust the exit by clicking on the edge of the board."
+  },
+  "GameList": {
+    "gameList": "Game List",
+    "createGame": "Create Game",
+    "refresh": "Refresh",
+    "sort": "Asc/Desc",
+    "filter": "Filter",
+    "import": "Import",
+    "export": "Export",
+    "play": "Play",
+    "unnamed": "Unnamed",
+    "editGame": "Edit Game",
+    "editInfo":"Edit Name And Tags",
+    "delete": "Delete",
+    "emptyText": "No games, please create or import games",
+    "total": "{{total}} in total",
+    "refreshSuccess": "Refresh success",
+    "importSuccess": "Imported success: {{repeatCount}} duplicate games, {{count}} new games",
+    "failedToParseFile": "Failed to parse file",
+    "exportSuccess": "Export success: {{count}} in total",
+    "failedToSaveFile": "Failed to save file",
+    "deleteConfirmTitle": "Confirm",
+    "deleteConfirmMessage": "Sure to delete this game?",
+    "deleteSuccess": "Delete success",
+    "failedToDeleteGame": "Failed to delete game",
+    "failedToDeleteTag": "Failed to delete tag"
+  }, 
+  "GamePlayer": {
+    "unnamed": "Unnamed",
+    "win": "Congratulations, you've won!"
+  },
+  "GameSolution": {
+    "solution": "Solution",
+    "prevStep": "Prev Step",
+    "nextStep": "Next Step"
+  }
+}

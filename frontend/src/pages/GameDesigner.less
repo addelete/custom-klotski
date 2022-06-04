@@ -1,0 +1,86 @@
+.GameDesignerPage {
+  .pageBody {
+    align-items: center;
+    justify-content: center;
+  }
+  .form {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    .inputGroup {
+      display: flex;
+      align-items: center;
+      background-color: #fff;
+      color: #000;
+      padding: 5px 8px;
+      border-radius: 4px;
+      input {
+        width: 30px;
+        height: 30px;
+        box-shadow: none;
+        outline: none;
+        border: none;
+        text-align: center;
+        background-color: #eee;
+        border-radius: 4px;
+        font-size: 16px;
+      }
+      span {
+        margin: 0 10px;
+        font-size: 14px;
+      }
+    }
+    .btn {
+      margin-left: 16px;
+    }
+  }
+  .board {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: 9px;
+    background: #333;
+    padding: 16px;
+    .contextMenu {
+      position: fixed;
+      z-index: 999;
+      background-color: #333333ee;
+      border: 1px solid #888888ee;
+      border-radius: 4px;
+      padding: 4px;
+      font-size: 14px;
+      color: #fff;
+      .menuItem {
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 3px;
+        &:hover {
+          background-color: #8d4c0a;
+        }
+      }
+    }
+    .canvas {
+      position: relative;
+      z-index: 1;
+    }
+    .door {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background-color: #000;
+      z-index: 0;
+    }
+  }
+  .tips {
+    margin-top: 40px;
+    color: #999;
+    .line {
+      margin: 0.8em;
+      code {
+        color: #fff;
+        font-size: larger;
+        margin: 0 0.5em;
+      }
+    }
+  }
+}

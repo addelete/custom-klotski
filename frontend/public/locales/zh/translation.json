@@ -1,0 +1,80 @@
+{
+  "GameInfoDialog": {
+    "filterConditions": "筛选条件",
+    "gameInfo": "布局信息",
+    "name": "名称",
+    "pleaseInputName": "请输入名称",
+    "tags": "标签",
+    "confirm": "确定",
+    "cancel": "取消"
+  },
+  "MyConfirm": {
+    "confirm": "确定",
+    "cancel": "取消"
+  },
+  "TagSelect": {
+    "add": "添加",
+    "select": "选中",
+    "createNewTag": "创建新标签",
+    "tagAlreadyExists": "标签已经存在",
+    "pleaseInputTagName": "请输入标签名称",
+    "cancel": "取消"
+  },
+  "GameDesigner": {
+    "designGame": "设计布局",
+    "rows": "行",
+    "cols": "列",
+    "solve": "求解",
+    "play": "试玩",
+    "save": "保存",
+    "noPiece": "无棋子",
+    "noKingPiece": "还未设置王棋",
+    "saveGameSuccess": "保存成功",
+    "createGameSuccess": "创建成功",
+    "gameAlreadyExists": "创建失败，已有相同布局，名称为：{{name}}",
+    "failedToSaveGame": "保存失败",
+    "noSolution": "无解",
+    "setAsKing": "设为王棋",
+    "toggleEditing": "编辑/退出编辑",
+    "remove": "删除",
+    "tips1": "在棋盘空格点击可创建或扩展棋子，在棋盘外点击可取消棋子编辑状态。",
+    "tips2": "棋子编辑状态下，按住<code>Alt</code>键或Mac的<code>Option</code>键，可裁剪棋子。",
+    "tips3": "在棋子上右键可唤出菜单。",
+    "tips4": "设置王棋后，可在棋盘边缘点击调整出口。"
+  },
+  "GameList": {
+    "gameList": "布局列表",
+    "createGame": "创建布局",
+    "refresh": "刷新",
+    "sort": "正序/倒序",
+    "filter": "筛选",
+    "import": "导入",
+    "export": "导出",
+    "play": "试玩",
+    "unnamed": "未命名",
+    "editGame": "编辑布局",
+    "editInfo":"修改名称/标签",
+    "delete": "删除",
+    "emptyText": "无布局，请创建或导入布局",
+    "total": "共 {{total}} 个",
+    "refreshSuccess": "刷新成功",
+    "importSuccess": "导入成功：重复局面{{repeatCount}}个, 新增局面{{count}}个",
+    "failedToParseFile": "解析文件错误",
+    "exportSuccess": "导出成功：共计{{count}}个",
+    "failedToSaveFile": "保存文件失败",
+    "deleteConfirmTitle": "确定删除",
+    "deleteConfirmMessage": "确定删除此布局？",
+    "deleteSuccess": "删除成功",
+    "failedToDeleteGame": "布局删除失败",
+    "failedToDeleteTag": "标签删除失败"
+  }, 
+  "GamePlayer": {
+    "unnamed": "未命名",
+    "win": "恭喜你，成功了！"
+  },
+  "GameSolution": {
+    "solution": "解答步骤",
+    "prevStep": "上一步",
+    "nextStep": "下一步"
+  }
+}

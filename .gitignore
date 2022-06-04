@@ -1,0 +1,10 @@
+.idea
+.vscode
+.DS_Store
+build/bin
+frontend/dist
+frontend/node_modules
+frontend/package.json.md5
+frontend/pnpm-lock.yaml
+go.sum
+wailsjs

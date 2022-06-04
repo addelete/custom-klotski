@@ -1,0 +1,13 @@
+{
+  "name": "Custom Klotski",
+  "outputfilename": "custom-klotski-desktop",
+  "frontend:install": "pnpm i",
+  "frontend:build": "pnpm build",
+  "frontend:dev:watcher": "pnpm dev",
+  "frontend:dev:serverUrl": "http://localhost:3000",
+  "wailsjsdir": ".",
+  "author": {
+    "name": "addelete",
+    "email": "humwo@outlook.com"
+  }
+}

@@ -1,0 +1,43 @@
+.GamePlayerPage {
+  .pageBody {
+    align-items: center;
+    justify-content: center;
+  }
+  .board {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: 9px;
+    background: #d2ccc9;
+    padding: 16px;
+    .contextMenu {
+      position: fixed;
+      z-index: 999;
+      background-color: #333333ee;
+      border: 1px solid #888888ee;
+      border-radius: 4px;
+      padding: 4px;
+      font-size: 14px;
+      color: #fff;
+      .menuItem {
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 3px;
+        &:hover {
+          background-color: #8d4c0a;
+        }
+      }
+    }
+    .canvas {
+      position: relative;
+      z-index: 1;
+    }
+    .door {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background-color: #000;
+      z-index: 0;
+    }
+  }
+}

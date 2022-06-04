@@ -1,0 +1,79 @@
+.GameListPage {
+  .toolsBar {
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    .actions {
+      .btn + .btn {
+        margin-left: 8px;
+      }
+    }
+  }
+  .gameList {
+    display: flex;
+    flex-wrap: wrap;
+    .gameItem {
+      flex: 1;
+      max-width: 50%;
+      min-width: 550px;
+      display: flex;
+      margin-bottom: 40px;
+      padding-right: 30px;
+      .cover {
+        position: relative;
+        width: 210px;
+        height: 210px;
+        background: #333;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+      }
+      .info {
+        flex: 1;
+        margin-left: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+      .name {
+        font-size: 24px;
+      }
+      .tags {
+        margin-top: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .actions {
+        margin-top: auto;
+        .btn + .btn {
+          margin-left: 8px !important;
+        }
+      }
+    }
+  }
+  .empty {
+    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    .emptyIcon {
+      color: #999;
+    }
+    .emptyText {
+      color: #999;
+      margin-top: 20px;
+    }
+  }
+  .pagination {
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+  }
+}
