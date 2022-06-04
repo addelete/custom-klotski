@@ -3,7 +3,7 @@
 </p>
 
 <p align="center" style="text-align: center">
-<a href="https://github.com/addelete/custom-klotski/blob/master/README.en.md">English</a> | <a href="https://github.com/addelete/custom-klotski/blob/master/README.md">中文</a>
+<a href="https://github.com/addelete/custom-klotski/blob/main/README.md">中文</a> | <a href="https://github.com/addelete/custom-klotski/blob/main/README.en.md">English</a>
 </p>
 
 ## About
