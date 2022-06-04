@@ -3,7 +3,7 @@
 </p>
 
 <p style="text-align: center;">
-<a href="https://github.com/addelete/custom-klotski-desktop/blob/master/README.en.md">English</a> | <a href="https://github.com/addelete/custom-klotski-desktop/blob/master/README.md">中文</a>
+<a href="https://github.com/addelete/custom-klotski/blob/master/README.en.md">English</a> | <a href="https://github.com/addelete/custom-klotski/blob/master/README.md">中文</a>
 </p>
 
 ## About
@@ -23,7 +23,7 @@ This is a klotski chess game，developing with [Wails](https://wails.io).
 # install wails cli (Detail:https://wails.io)
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
 # clone project
-git clone https://github.com/addelete/custom-klotski-desktop.git
+git clone https://github.com/addelete/custom-klotski.git
 cd custom-klotski-desktop
 # run project
 wails dev -nogen

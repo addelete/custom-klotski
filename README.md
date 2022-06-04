@@ -3,7 +3,7 @@
 </p>
 
 <p style="text-align: center;">
-<a href="https://github.com/addelete/custom-klotski-desktop/blob/master/README.en.md">English</a> | <a href="https://github.com/addelete/custom-klotski-desktop/blob/master/README.md">中文</a>
+<a href="https://github.com/addelete/custom-klotski/blob/master/README.en.md">English</a> | <a href="https://github.com/addelete/custom-klotski/blob/master/README.md">中文</a>
 </p>
 
 ## 项目介绍
@@ -25,7 +25,7 @@
 # 安装wails cli (详细：https://wails.io)
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
 # clone项目
-git clone https://github.com/addelete/custom-klotski-desktop.git
+git clone https://github.com/addelete/custom-klotski.git
 cd custom-klotski-desktop
 # 运行项目
 wails dev -nogen
