@@ -1,8 +1,8 @@
-<p style="text-align: center;">
+<p align="center">
 <img src="logo.png" style="width: 256px;" alt="华容道" />
 </p>
 
-<p style="text-align: center;">
+<p align="center">
 <a href="https://github.com/addelete/custom-klotski/blob/master/README.en.md">English</a> | <a href="https://github.com/addelete/custom-klotski/blob/master/README.md">中文</a>
 </p>
 
@@ -11,6 +11,7 @@
 This is a klotski chess game，developing with [Wails](https://wails.io).
 
 ## Features
+
 - Game List
 - Play Game
 - Design Game
@@ -19,6 +20,7 @@ This is a klotski chess game，developing with [Wails](https://wails.io).
 - Import/Export Game
 
 ## Live Development
+
 ```shell
 # install wails cli (Detail:https://wails.io)
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
@@ -34,4 +36,5 @@ wails dev -nogen
 ```shell
 wails build
 ```
+
 The compiled app will be in the build directory

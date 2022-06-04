@@ -1,8 +1,8 @@
-<p style="text-align: center;">
+<p align="center">
 <img src="logo.png" style="width: 256px;" alt="华容道" />
 </p>
 
-<p style="text-align: center;">
+<p align="center">
 <a href="https://github.com/addelete/custom-klotski/blob/master/README.en.md">English</a> | <a href="https://github.com/addelete/custom-klotski/blob/master/README.md">中文</a>
 </p>
 
