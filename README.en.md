@@ -26,7 +26,7 @@ This is a klotski chess game，developing with [Wails](https://wails.io).
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
 # clone project
 git clone https://github.com/addelete/custom-klotski.git
-cd custom-klotski-desktop
+cd custom-klotski
 # run project
 wails dev -nogen
 ```

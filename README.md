@@ -26,7 +26,7 @@
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
 # clone项目
 git clone https://github.com/addelete/custom-klotski.git
-cd custom-klotski-desktop
+cd custom-klotski
 # 运行项目
 wails dev -nogen
 ```

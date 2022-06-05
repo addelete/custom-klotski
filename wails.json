@@ -1,6 +1,6 @@
 {
   "name": "Custom Klotski",
-  "outputfilename": "custom-klotski-desktop",
+  "outputfilename": "custom-klotski",
   "frontend:install": "pnpm i",
   "frontend:build": "pnpm build",
   "frontend:dev:watcher": "pnpm dev",
