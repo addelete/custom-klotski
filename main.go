@@ -34,7 +34,7 @@ func main() {
 		Assets:     assets,
 		OnStartup:  application.StartUp,
 		Menu:       menus,
-		Fullscreen: true,
+		Fullscreen: false,
 		Bind: []interface{}{
 			application,
 		},
