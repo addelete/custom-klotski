@@ -67,9 +67,9 @@ function GameListPage() {
     state.orderAsc
   ])
 
-  const loadGameList = useLockFn(async () => {
+  const loadGameList = useLockFn(async (page = 0) => {
     const data = await GameService.list({
-      page: state.page,
+      page: page > 0 ? page : state.page,
       orderAsc: state.orderAsc,
       nameFilter: state.nameFilter,
       tagsFilter: state.tagsFilter,
@@ -173,13 +173,15 @@ function GameListPage() {
           setState(produce(draft => {
             draft.list = state.list.filter(item => item.game.id !== id)
           }))
+          loadGameList()
         }
       }
     })
   })
 
   const reload = useMemoizedFn(async () => {
-    await loadGameList()
+    setState({ page: 1 })
+    await loadGameList(1)
     myAlertRef.current.open({ message: t("GameList.refreshSuccess"), type: 'success' })
   })
 
