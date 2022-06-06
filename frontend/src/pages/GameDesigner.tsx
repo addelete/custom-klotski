@@ -554,7 +554,11 @@ function GameDesignerPage() {
      */
     const solve = async () => {
         const gameData = makeGameData()
+        setState({ solveLoading: true })
         const res = await GameService.solve(gameData)
+        setState({
+            solveLoading: false,
+        })
         if (!res.success && res.errMessage) {
             alertRef.current.open({
                 message: t(`GameDesigner.${res.errMessage}`),
