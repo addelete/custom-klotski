@@ -436,15 +436,12 @@ function GameDesignerPage() {
      * 删除棋子
      */
     const deletePiece = useMemoizedFn((pieceIndex: number) => {
-        const kingPiecePos = state.pieceList[state.kingPieceIndex]?.position
         setState(produce(draft => {
             draft.pieceList.splice(pieceIndex, 1)
-            if (kingPiecePos) {
-                const newKingPieceIndex = state.pieceList.findIndex(piece => piece.inBoard[kingPiecePos[0]]?.[kingPiecePos[1]])
-                draft.kingPieceIndex = newKingPieceIndex
-            }
+            draft.kingPieceIndex =  state.kingPieceIndex === pieceIndex ? -1 : (state.kingPieceIndex > pieceIndex ? state.kingPieceIndex - 1 : state.kingPieceIndex)
         }))
     })
+
 
     const toggleSelectPiece = useMemoizedFn((pieceIndex: number) => {
         if (state.editingPieceIndex === pieceIndex) {
@@ -701,6 +698,10 @@ function GameDesignerPage() {
         })
     })
 
+    const stopPropagation = useMemoizedFn((e: React.MouseEvent) => {
+        e.stopPropagation()
+    })
+
     return (
         <div className="GameDesignerPage" onMouseDown={handleClickOutBoard}>
             <MyAlert ref={alertRef} />
@@ -858,6 +859,7 @@ function GameDesignerPage() {
                                     top: state.contextMenuData.y,
                                 }}
                                 onClick={hideContentMenu}
+                                onMouseDown={stopPropagation}
                             >
                                 <div className='menuItem'
                                     onClick={() => setKingPiece((state.contextMenuData as ContextMenuData).pieceIndex)}>{t("GameDesigner.setAsKing")}</div>
