@@ -20,7 +20,7 @@ func (a *App) GameList(req GameListReq) GameListRes {
 	db := models.GetDB()
 	var games []models.Game
 	var total int64
-	pageSize := 6
+	pageSize := 4
 	if req.NameFilter != "" {
 		db = db.Where("name LIKE ?", "%"+req.NameFilter+"%")
 	}

@@ -21,8 +21,8 @@ import { MyConfirm, MyConfirmRef } from '@/src/components/MyConfirm';
 import { MyAlert, MyAlertRef } from '@/src/components/MyAlert';
 import produce from 'immer';
 import { currentGame } from '@/src/stores/currentGame';
-import './GameList.less'
 import { useTranslation } from 'react-i18next';
+import './GameList.less'
 
 type GameItem = {
   gameData: GameData;
@@ -30,6 +30,7 @@ type GameItem = {
   cover: string;
 }
 
+const pageSize = 4;
 
 function GameListPage() {
 
@@ -344,12 +345,12 @@ function GameListPage() {
               </div>
             ) : null}
           </div>
-          {state.total > 6 ? (
+          {state.total > pageSize ? (
             <div className='pagination'>
               <div>{t("GameList.total", { total: state.total })}</div>
               <Pagination
                 size='large'
-                count={Math.ceil(state.total / 6)}
+                count={Math.ceil(state.total / pageSize)}
                 page={state.page}
                 onChange={handlePageChange}
               />
