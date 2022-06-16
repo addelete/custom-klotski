@@ -30,7 +30,7 @@ func main() {
 	err := wails.Run(&options.App{
 		Title:      title,
 		Width:      1366,
-		Height:     800,
+		Height:     840,
 		Assets:     assets,
 		OnStartup:  application.StartUp,
 		Menu:       menus,
