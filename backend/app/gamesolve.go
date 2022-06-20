@@ -9,7 +9,9 @@ type GameSolveRes struct {
 }
 
 func (a *App) GameSolve(gameData utils.GameData) GameSolveRes {
-	solution, err := utils.Solve(gameData)
+	gameSolve := utils.GameSolve{}
+	gameSolve.Init(gameData)
+	solution, err := gameSolve.Solve()
 	if err != nil {
 		return GameSolveRes{
 			Success:    false,
