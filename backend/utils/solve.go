@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 )
 
+type Board = [][]int8
 type Shape = [][]bool
-type Pos = []int
+type Pos = []int8
 
 type Piece struct {
 	Shape    Shape `json:"shape"`
@@ -17,102 +19,106 @@ type Piece struct {
 
 type GameData struct {
 	PieceList      []Piece `json:"pieceList"`
-	BoardRows      int     `json:"boardRows"`
-	BoardCols      int     `json:"boardCols"`
-	KingPieceIndex int     `json:"kingPieceIndex"`
+	BoardRows      int8    `json:"boardRows"`
+	BoardCols      int8    `json:"boardCols"`
+	KingPieceIndex int8    `json:"kingPieceIndex"`
 	KingWinPos     Pos     `json:"kingWinPos"`
 }
 
-type GameStatePiece struct {
-	Kind     int
-	RowIndex int
-	ColIndex int
-}
-
 type GameState struct {
-	PieceList []GameStatePiece
-	Steps     [][]int
+	PieceList [][]int8
+	Steps     [][]int8
+	Board     Board
 }
 
 type Step struct {
-	PieceIndex int   `json:"pieceIndex"`
-	Direction  []int `json:"direction"`
+	PieceIndex int8   `json:"pieceIndex"`
+	Direction  []int8 `json:"direction"`
+}
+
+type PieceKindShape struct {
+	Kind  int8
+	Shape Shape
 }
 
 type GameSolve struct {
 	game               GameData
-	boardRows          int
-	boardCols          int
-	kingPieceIndex     int
+	boardRows          int8
+	boardCols          int8
+	kingPieceIndex     int8
 	kingWinPos         Pos
-	pieceKindShapeList []Shape
+	pieceKindShapeList []PieceKindShape
 	gameStateStrSet    map[string]bool // 局面字符串集合，将局面转字符串（用棋子排序保证唯一），存入集合，{局面字符串}
 	gameStateList      []GameState     // 局面列表，存储所有待计算的局面
-	baseDirs           [][]int         // 基础方向，每个棋子的可移动方向
+	baseDirs           [][]int8        // 基础方向，每个棋子的可移动方向
+	flipDirList        []int8
 }
 
-func (this *GameSolve) Init(game GameData) {
-	this.game = game
-	this.boardRows = game.BoardRows
-	this.boardCols = game.BoardCols
-	this.kingPieceIndex = game.KingPieceIndex
-	this.kingWinPos = game.KingWinPos
-	this.gameStateStrSet = map[string]bool{}
-	this.baseDirs = [][]int{
+func (gs *GameSolve) Init(game GameData) {
+	gs.game = game
+	gs.boardRows = game.BoardRows
+	gs.boardCols = game.BoardCols
+	gs.kingPieceIndex = game.KingPieceIndex
+	gs.kingWinPos = game.KingWinPos
+	gs.gameStateStrSet = map[string]bool{}
+	gs.baseDirs = [][]int8{
 		{1, 0},
 		{0, 1},
 		{-1, 0},
 		{0, -1},
 	}
+	gs.flipDirList = []int8{
+		2, 3, 0, 1,
+	}
 	kingPiece := game.PieceList[game.KingPieceIndex] // 王棋
-	this.pieceKindShapeList = append(this.pieceKindShapeList, kingPiece.Shape)
-	pieceKindStrMap := make(map[string]int)
+	gs.pieceKindShapeList = make([]PieceKindShape, len(game.PieceList))
+	gs.pieceKindShapeList[game.KingPieceIndex] = PieceKindShape{
+		Kind:  0,
+		Shape: kingPiece.Shape,
+	}
+	pieceKindStrMap := make(map[string]int8)
 	startGameState := GameState{
-		PieceList: make([]GameStatePiece, len(game.PieceList)),
-		Steps:     [][]int{},
+		PieceList: make([][]int8, len(game.PieceList)),
+		Steps:     [][]int8{},
 	} // 开局局面，存储棋子类型和位置，方便后续甄别是否重复局面，[棋子索引:棋子类型+位置]
-	startGameState.PieceList[game.KingPieceIndex] = GameStatePiece{
-		Kind:     0,
-		RowIndex: kingPiece.Position[0],
-		ColIndex: kingPiece.Position[1],
-	} // 将王棋放入局面
+	startGameState.PieceList[game.KingPieceIndex] = kingPiece.Position // 将王棋放入局面
+	kindCount := int8(0)
 	// 完善棋子类型列表、棋子形状与类型的映射、开局局面
 	for i, piece := range game.PieceList {
-		if i != game.KingPieceIndex {
+		if int8(i) != game.KingPieceIndex {
 			shapeStr := shape2Str(piece.Shape)
 			kind, isContains := pieceKindStrMap[shapeStr]
 			if !isContains {
-				this.pieceKindShapeList = append(this.pieceKindShapeList, piece.Shape)
-				kind = len(this.pieceKindShapeList) - 1
+				kindCount++
+				kind = kindCount
 				pieceKindStrMap[shapeStr] = kind
 			}
-			startGameState.PieceList[i] = GameStatePiece{
-				Kind:     kind,
-				RowIndex: piece.Position[0],
-				ColIndex: piece.Position[1],
+			startGameState.PieceList[i] = piece.Position
+
+			gs.pieceKindShapeList[i] = PieceKindShape{
+				Kind:  kind,
+				Shape: piece.Shape,
 			}
 		}
 	}
-	this.gameStateStrSet[gameState2Str(startGameState)] = true // 将开始局面存入局面字符串集合
-	this.gameStateList = append(this.gameStateList, startGameState)
+	startGameState.Board = gs.gameState2Board(startGameState)
+	gs.gameStateStrSet[gs.board2Str(startGameState.Board)] = true // 将开始局面存入局面字符串集合
+	gs.gameStateList = append(gs.gameStateList, startGameState)
 }
 
-func (this *GameSolve) Solve() ([]Step, error) {
-	kingPiece := this.game.PieceList[this.game.KingPieceIndex] // 王棋
+func (gs *GameSolve) Solve() ([]Step, error) {
+	kingPiece := gs.game.PieceList[gs.game.KingPieceIndex] // 王棋
 	// 判断开始局面是否已经赢了
-	if kingPiece.Position[0] == this.kingWinPos[0] && kingPiece.Position[1] == this.kingWinPos[1] {
+	if kingPiece.Position[0] == gs.kingWinPos[0] && kingPiece.Position[1] == gs.kingWinPos[1] {
 		return []Step{}, nil
 	}
 
-	for len(this.gameStateList) > 0 {
-		gameState := this.gameStateList[0]
-		this.gameStateList = this.gameStateList[1:]
-
-		// 计算棋盘
-		board := this.gameState2Board(gameState)
+	for len(gs.gameStateList) > 0 {
+		gameState := gs.gameStateList[0]
+		gs.gameStateList = gs.gameStateList[1:]
 
 		for pieceIndex := 0; pieceIndex < len(gameState.PieceList); pieceIndex++ {
-			win, steps := this.tryMove(gameState, pieceIndex, board, map[int]bool{})
+			win, steps := gs.tryMove(gameState, int8(pieceIndex), map[int8]bool{})
 			if win {
 				return steps, nil
 			}
@@ -121,33 +127,26 @@ func (this *GameSolve) Solve() ([]Step, error) {
 	return []Step{}, errors.New("no solution")
 }
 
-func (this *GameSolve) tryMove(gameState GameState, pieceIndex int, board [][]bool, banDirsSet map[int]bool) (bool, []Step) {
+func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet map[int8]bool) (bool, []Step) {
 	piece := gameState.PieceList[pieceIndex]
-	pieceShape := this.pieceKindShapeList[piece.Kind]
-	for dirIndex, dir := range this.baseDirs {
-		if _, isContains := banDirsSet[dirIndex]; isContains {
+	pieceShape := gs.pieceKindShapeList[pieceIndex].Shape
+	for dirIndex, dir := range gs.baseDirs {
+		if _, isContains := banDirsSet[int8(dirIndex)]; isContains {
 			continue
 		}
 		for rowIndex, row := range pieceShape {
 			for colIndex := range row {
 				// 此格移动之后在棋盘上
-				inBoard := piece.RowIndex+dir[0]+rowIndex >= 0 &&
-					piece.RowIndex+dir[0]+rowIndex < this.boardRows &&
-					piece.ColIndex+dir[1]+colIndex >= 0 &&
-					piece.ColIndex+dir[1]+colIndex < this.boardCols
+				inBoard := piece[0]+dir[0]+int8(rowIndex) >= 0 &&
+					piece[0]+dir[0]+int8(rowIndex) < gs.boardRows &&
+					piece[1]+dir[1]+int8(colIndex) >= 0 &&
+					piece[1]+dir[1]+int8(colIndex) < gs.boardCols
 				if !inBoard {
 					goto NextDir
 				}
-				// 此格移动之后棋盘上是否已有棋子
-				isFillInBoard := board[piece.RowIndex+dir[0]+rowIndex][piece.ColIndex+dir[1]+colIndex]
-				// 此格移动之后在当前棋子之前的位置之上
-				isFillInPiece := rowIndex+dir[0] >= 0 &&
-					rowIndex+dir[0] < len(pieceShape) &&
-					colIndex+dir[1] >= 0 &&
-					colIndex+dir[1] < len(pieceShape[0]) &&
-					pieceShape[rowIndex+dir[0]][colIndex+dir[1]]
-
-				if isFillInBoard && !isFillInPiece {
+				gridBeforePieceIndex := gameState.Board[piece[0]+dir[0]+int8(rowIndex)][piece[1]+dir[1]+int8(colIndex)]
+				// 此格移动之后的位置，棋盘已有棋子，且棋子不是自身，则不能移动
+				if gridBeforePieceIndex > 0 && gridBeforePieceIndex != int8(pieceIndex)+1 {
 					goto NextDir
 				}
 			}
@@ -155,33 +154,32 @@ func (this *GameSolve) tryMove(gameState GameState, pieceIndex int, board [][]bo
 		{
 			// 可以移动
 			newGameState := cloneGameState(gameState)
-			newGameState.PieceList[pieceIndex].RowIndex += dir[0]
-			newGameState.PieceList[pieceIndex].ColIndex += dir[1]
-
-			newGameStateStr := gameState2Str(newGameState)
-			if _, isContains := this.gameStateStrSet[newGameStateStr]; isContains {
+			newGameState.PieceList[pieceIndex][0] += dir[0]
+			newGameState.PieceList[pieceIndex][1] += dir[1]
+			newGameState.Board = gs.gameState2Board(newGameState)
+			newGameStateStr := gs.board2Str(newGameState.Board)
+			if _, isContains := gs.gameStateStrSet[newGameStateStr]; isContains {
 				// 已经存在该局面
 				continue
 			}
-			this.gameStateStrSet[newGameStateStr] = true
+			gs.gameStateStrSet[newGameStateStr] = true
 			if len(newGameState.Steps) > 0 && newGameState.Steps[len(newGameState.Steps)-1][0] == pieceIndex {
-				newGameState.Steps[len(newGameState.Steps)-1] = []int{
+				newGameState.Steps[len(newGameState.Steps)-1] = []int8{
 					pieceIndex,
 					newGameState.Steps[len(newGameState.Steps)-1][1] + dir[0],
 					newGameState.Steps[len(newGameState.Steps)-1][2] + dir[1],
 				}
 			} else {
-				newGameState.Steps = append(newGameState.Steps, []int{pieceIndex, dir[0], dir[1]})
+				newGameState.Steps = append(newGameState.Steps, []int8{pieceIndex, dir[0], dir[1]})
 			}
-			win := this.isWin(newGameState)
+			win := gs.isWin(newGameState)
 			if win {
 				return true, humanSteps(newGameState.Steps)
 			}
-			this.gameStateList = append(this.gameStateList, newGameState)
+			gs.gameStateList = append(gs.gameStateList, newGameState)
 			// 看看这枚棋子是否能够继续移动
-			newBoard := this.gameState2Board(newGameState)
-			newWin, steps := this.tryMove(newGameState, pieceIndex, newBoard, map[int]bool{
-				flipDir(dirIndex): true,
+			newWin, steps := gs.tryMove(newGameState, pieceIndex, map[int8]bool{
+				gs.flipDirList[dirIndex]: true,
 			})
 			if newWin {
 				return true, steps
@@ -194,40 +192,39 @@ func (this *GameSolve) tryMove(gameState GameState, pieceIndex int, board [][]bo
 	return false, []Step{}
 }
 
-func (this *GameSolve) isWin(gameState GameState) bool {
-	return gameState.PieceList[this.kingPieceIndex].RowIndex == this.kingWinPos[0] &&
-		gameState.PieceList[this.kingPieceIndex].ColIndex == this.kingWinPos[1]
+func (gs *GameSolve) isWin(gameState GameState) bool {
+	return gameState.PieceList[gs.kingPieceIndex][0] == gs.kingWinPos[0] &&
+		gameState.PieceList[gs.kingPieceIndex][1] == gs.kingWinPos[1]
 }
 
 func cloneGameState(state GameState) GameState {
 	gameState := GameState{
-		PieceList: make([]GameStatePiece, len(state.PieceList)),
-		Steps:     [][]int{},
+		PieceList: make([][]int8, len(state.PieceList)),
+		Steps:     make([][]int8, len(state.Steps)),
 	}
 	for i, piece := range state.PieceList {
-		gameState.PieceList[i] = GameStatePiece{
-			Kind:     piece.Kind,
-			RowIndex: piece.RowIndex,
-			ColIndex: piece.ColIndex,
+		gameState.PieceList[i] = []int8{
+			piece[0],
+			piece[1],
 		}
 	}
-	for _, step := range state.Steps {
-		gameState.Steps = append(gameState.Steps, step)
+	for i, step := range state.Steps {
+		gameState.Steps[i] = step
 	}
 	return gameState
 }
 
-func (this *GameSolve) gameState2Board(gameState2Board GameState) Shape {
-	board := make(Shape, this.boardRows)
-	for i := 0; i < this.boardRows; i++ {
-		board[i] = make([]bool, this.boardCols)
+func (gs *GameSolve) gameState2Board(gameState GameState) Board {
+	board := make(Board, gs.boardRows)
+	for i := int8(0); i < gs.boardRows; i++ {
+		board[i] = make([]int8, gs.boardCols)
 	}
-	for _, piece := range gameState2Board.PieceList {
-		pieceShape := this.pieceKindShapeList[piece.Kind]
+	for pieceIndex, piece := range gameState.PieceList {
+		pieceShape := gs.pieceKindShapeList[pieceIndex].Shape
 		for rowIndex, row := range pieceShape {
 			for colIndex, grid := range row {
 				if grid {
-					board[piece.RowIndex+rowIndex][piece.ColIndex+colIndex] = true
+					board[piece[0]+int8(rowIndex)][piece[1]+int8(colIndex)] = int8(pieceIndex) + 1
 				}
 			}
 		}
@@ -236,12 +233,29 @@ func (this *GameSolve) gameState2Board(gameState2Board GameState) Shape {
 }
 
 /**
+棋盘转字符串
+*/
+func (gs *GameSolve) board2Str(board Board) string {
+	res := ""
+	for _, row := range board {
+		for _, grid := range row {
+			if grid > 0 {
+				res += strconv.Itoa(int(gs.pieceKindShapeList[grid-1].Kind + 1))
+			} else {
+				res += "0"
+			}
+		}
+	}
+	return res
+}
+
+/**
 游戏局面转成唯一字符串
 */
-func gameState2Str(gameState GameState) string {
+func (gs *GameSolve) gameState2Str(gameState GameState) string {
 	strArr := make([]string, len(gameState.PieceList))
 	for i, piece := range gameState.PieceList {
-		strArr[i] = fmt.Sprintf("%d%d%d", piece.Kind, piece.RowIndex, piece.ColIndex)
+		strArr[i] = fmt.Sprintf("%d%d%d", gs.pieceKindShapeList[i].Kind, piece[0], piece[1])
 	}
 	sort.Sort(sort.StringSlice(strArr))
 	return strings.Join(strArr, "")
@@ -264,44 +278,13 @@ func shape2Str(shape Shape) string {
 	return strings.Join(strArr, "")
 }
 
-func humanSteps(steps [][]int) []Step {
+func humanSteps(steps [][]int8) []Step {
 	res := make([]Step, len(steps))
 	for i, step := range steps {
 		res[i] = Step{
 			PieceIndex: step[0],
-			Direction:  []int{step[1], step[2]},
+			Direction:  []int8{step[1], step[2]},
 		}
 	}
 	return res
-}
-
-/**
-方向翻转
-*/
-func flipDir(dirIndex int) int {
-	switch dirIndex {
-	case 0:
-		return 2
-	case 1:
-		return 3
-	case 2:
-		return 0
-	case 3:
-		return 1
-	default:
-		return -1
-	}
-}
-
-func printBoard(board Shape) {
-	for _, row := range board {
-		for _, grid := range row {
-			if grid {
-				fmt.Print("1")
-			} else {
-				fmt.Print("0")
-			}
-		}
-		fmt.Println()
-	}
 }

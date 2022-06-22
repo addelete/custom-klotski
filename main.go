@@ -20,6 +20,7 @@ func main() {
 	application := app.NewApp()
 	menus := menu.NewMenu()
 	appMenu := menu.AppMenu()
+
 	menus.Append(appMenu)
 
 	title := "Custom Klotski"
