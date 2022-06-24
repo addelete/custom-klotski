@@ -3,7 +3,6 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -26,9 +25,9 @@ type GameData struct {
 }
 
 type GameState struct {
-	PieceList [][]int8
-	Steps     [][]int8
-	Board     Board
+	PieceList    []int8 `json:"pieceList"`
+	Board        Board
+	PreGameState *GameState
 }
 
 type Step struct {
@@ -54,6 +53,8 @@ type GameSolve struct {
 	flipDirList        []int8
 }
 
+var tryCount int
+
 func (gs *GameSolve) Init(game GameData) {
 	gs.game = game
 	gs.boardRows = game.BoardRows
@@ -78,10 +79,9 @@ func (gs *GameSolve) Init(game GameData) {
 	}
 	pieceKindStrMap := make(map[string]int8)
 	startGameState := GameState{
-		PieceList: make([][]int8, len(game.PieceList)),
-		Steps:     [][]int8{},
+		PieceList: make([]int8, len(game.PieceList)),
 	} // 开局局面，存储棋子类型和位置，方便后续甄别是否重复局面，[棋子索引:棋子类型+位置]
-	startGameState.PieceList[game.KingPieceIndex] = kingPiece.Position // 将王棋放入局面
+	startGameState.PieceList[game.KingPieceIndex] = posToPiece(kingPiece.Position) // 将王棋放入局面
 	kindCount := int8(0)
 	// 完善棋子类型列表、棋子形状与类型的映射、开局局面
 	for i, piece := range game.PieceList {
@@ -93,7 +93,7 @@ func (gs *GameSolve) Init(game GameData) {
 				kind = kindCount
 				pieceKindStrMap[shapeStr] = kind
 			}
-			startGameState.PieceList[i] = piece.Position
+			startGameState.PieceList[i] = posToPiece(piece.Position)
 
 			gs.pieceKindShapeList[i] = PieceKindShape{
 				Kind:  kind,
@@ -116,10 +116,10 @@ func (gs *GameSolve) Solve() ([]Step, error) {
 	for len(gs.gameStateList) > 0 {
 		gameState := gs.gameStateList[0]
 		gs.gameStateList = gs.gameStateList[1:]
-
 		for pieceIndex := 0; pieceIndex < len(gameState.PieceList); pieceIndex++ {
 			win, steps := gs.tryMove(gameState, int8(pieceIndex), map[int8]bool{})
 			if win {
+				println(tryCount)
 				return steps, nil
 			}
 		}
@@ -128,7 +128,9 @@ func (gs *GameSolve) Solve() ([]Step, error) {
 }
 
 func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet map[int8]bool) (bool, []Step) {
+
 	piece := gameState.PieceList[pieceIndex]
+	pos := pieceToPos(piece)
 	pieceShape := gs.pieceKindShapeList[pieceIndex].Shape
 	for dirIndex, dir := range gs.baseDirs {
 		if _, isContains := banDirsSet[int8(dirIndex)]; isContains {
@@ -137,14 +139,14 @@ func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet ma
 		for rowIndex, row := range pieceShape {
 			for colIndex := range row {
 				// 此格移动之后在棋盘上
-				inBoard := piece[0]+dir[0]+int8(rowIndex) >= 0 &&
-					piece[0]+dir[0]+int8(rowIndex) < gs.boardRows &&
-					piece[1]+dir[1]+int8(colIndex) >= 0 &&
-					piece[1]+dir[1]+int8(colIndex) < gs.boardCols
+				inBoard := pos[0]+dir[0]+int8(rowIndex) >= 0 &&
+					pos[0]+dir[0]+int8(rowIndex) < gs.boardRows &&
+					pos[1]+dir[1]+int8(colIndex) >= 0 &&
+					pos[1]+dir[1]+int8(colIndex) < gs.boardCols
 				if !inBoard {
 					goto NextDir
 				}
-				gridBeforePieceIndex := gameState.Board[piece[0]+dir[0]+int8(rowIndex)][piece[1]+dir[1]+int8(colIndex)]
+				gridBeforePieceIndex := gameState.Board[pos[0]+dir[0]+int8(rowIndex)][pos[1]+dir[1]+int8(colIndex)]
 				// 此格移动之后的位置，棋盘已有棋子，且棋子不是自身，则不能移动
 				if gridBeforePieceIndex > 0 && gridBeforePieceIndex != int8(pieceIndex)+1 {
 					goto NextDir
@@ -152,31 +154,28 @@ func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet ma
 			}
 		}
 		{
+
 			// 可以移动
 			newGameState := cloneGameState(gameState)
-			newGameState.PieceList[pieceIndex][0] += dir[0]
-			newGameState.PieceList[pieceIndex][1] += dir[1]
+			newGameState.PieceList[pieceIndex] = posToPiece([]int8{
+				pos[0] + dir[0],
+				pos[1] + dir[1],
+			})
 			newGameState.Board = gs.gameState2Board(newGameState)
 			newGameStateStr := gs.board2Str(newGameState.Board)
 			if _, isContains := gs.gameStateStrSet[newGameStateStr]; isContains {
 				// 已经存在该局面
 				continue
 			}
+			//println(newGameStateStr)
+			tryCount++
 			gs.gameStateStrSet[newGameStateStr] = true
-			if len(newGameState.Steps) > 0 && newGameState.Steps[len(newGameState.Steps)-1][0] == pieceIndex {
-				newGameState.Steps[len(newGameState.Steps)-1] = []int8{
-					pieceIndex,
-					newGameState.Steps[len(newGameState.Steps)-1][1] + dir[0],
-					newGameState.Steps[len(newGameState.Steps)-1][2] + dir[1],
-				}
-			} else {
-				newGameState.Steps = append(newGameState.Steps, []int8{pieceIndex, dir[0], dir[1]})
-			}
+
 			win := gs.isWin(newGameState)
 			if win {
-				return true, humanSteps(newGameState.Steps)
+				return true, humanSteps(newGameState)
 			}
-			gs.gameStateList = append(gs.gameStateList, newGameState)
+
 			// 看看这枚棋子是否能够继续移动
 			newWin, steps := gs.tryMove(newGameState, pieceIndex, map[int8]bool{
 				gs.flipDirList[dirIndex]: true,
@@ -184,6 +183,7 @@ func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet ma
 			if newWin {
 				return true, steps
 			}
+			gs.gameStateList = append(gs.gameStateList, newGameState)
 		}
 	NextDir:
 		continue
@@ -193,25 +193,8 @@ func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet ma
 }
 
 func (gs *GameSolve) isWin(gameState GameState) bool {
-	return gameState.PieceList[gs.kingPieceIndex][0] == gs.kingWinPos[0] &&
-		gameState.PieceList[gs.kingPieceIndex][1] == gs.kingWinPos[1]
-}
-
-func cloneGameState(state GameState) GameState {
-	gameState := GameState{
-		PieceList: make([][]int8, len(state.PieceList)),
-		Steps:     make([][]int8, len(state.Steps)),
-	}
-	for i, piece := range state.PieceList {
-		gameState.PieceList[i] = []int8{
-			piece[0],
-			piece[1],
-		}
-	}
-	for i, step := range state.Steps {
-		gameState.Steps[i] = step
-	}
-	return gameState
+	pos := pieceToPos(gameState.PieceList[gs.kingPieceIndex])
+	return pos[0] == gs.kingWinPos[0] && pos[1] == gs.kingWinPos[1]
 }
 
 func (gs *GameSolve) gameState2Board(gameState GameState) Board {
@@ -220,11 +203,12 @@ func (gs *GameSolve) gameState2Board(gameState GameState) Board {
 		board[i] = make([]int8, gs.boardCols)
 	}
 	for pieceIndex, piece := range gameState.PieceList {
+		pos := pieceToPos(piece)
 		pieceShape := gs.pieceKindShapeList[pieceIndex].Shape
 		for rowIndex, row := range pieceShape {
 			for colIndex, grid := range row {
 				if grid {
-					board[piece[0]+int8(rowIndex)][piece[1]+int8(colIndex)] = int8(pieceIndex) + 1
+					board[pos[0]+int8(rowIndex)][pos[1]+int8(colIndex)] = int8(pieceIndex) + 1
 				}
 			}
 		}
@@ -240,25 +224,18 @@ func (gs *GameSolve) board2Str(board Board) string {
 	for _, row := range board {
 		for _, grid := range row {
 			if grid > 0 {
-				res += strconv.Itoa(int(gs.pieceKindShapeList[grid-1].Kind + 1))
+				v := int(gs.pieceKindShapeList[grid-1].Kind + 1)
+				if v < 10 {
+					res += "0" + strconv.Itoa(v)
+				} else {
+					res += strconv.Itoa(v)
+				}
 			} else {
-				res += "0"
+				res += "00"
 			}
 		}
 	}
 	return res
-}
-
-/**
-游戏局面转成唯一字符串
-*/
-func (gs *GameSolve) gameState2Str(gameState GameState) string {
-	strArr := make([]string, len(gameState.PieceList))
-	for i, piece := range gameState.PieceList {
-		strArr[i] = fmt.Sprintf("%d%d%d", gs.pieceKindShapeList[i].Kind, piece[0], piece[1])
-	}
-	sort.Sort(sort.StringSlice(strArr))
-	return strings.Join(strArr, "")
 }
 
 /**
@@ -278,13 +255,61 @@ func shape2Str(shape Shape) string {
 	return strings.Join(strArr, "")
 }
 
-func humanSteps(steps [][]int8) []Step {
-	res := make([]Step, len(steps))
-	for i, step := range steps {
-		res[i] = Step{
-			PieceIndex: step[0],
-			Direction:  []int8{step[1], step[2]},
+func humanSteps(gameState GameState) []Step {
+	var res []Step
+	dirMap := map[int8][]int8{
+		1:   {0, 1},
+		-1:  {0, -1},
+		10:  {1, 0},
+		-10: {-1, 0},
+	}
+
+	for gameState.PreGameState != nil {
+		for pieceIndex, piece := range gameState.PieceList {
+			if piece != gameState.PreGameState.PieceList[pieceIndex] {
+				diff := piece - gameState.PreGameState.PieceList[pieceIndex]
+				dir := dirMap[diff]
+				if len(res) > 0 && int8(pieceIndex) == res[len(res)-1].PieceIndex {
+					res[len(res)-1].Direction = []int8{
+						res[len(res)-1].Direction[0] + dir[0],
+						res[len(res)-1].Direction[1] + dir[1],
+					}
+				} else {
+					res = append(res, Step{
+						PieceIndex: int8(pieceIndex),
+						Direction:  dir,
+					})
+				}
+			}
 		}
+		gameState = *gameState.PreGameState
+	}
+	var temp Step
+	length := len(res)
+	for i := 0; i < length/2; i++ {
+		temp = res[i]
+		res[i] = res[length-1-i]
+		res[length-1-i] = temp
 	}
 	return res
+}
+
+func pieceToPos(piece int8) []int8 {
+	return []int8{
+		piece / 10,
+		piece % 10,
+	}
+}
+
+func posToPiece(pos []int8) int8 {
+	return pos[0]*10 + pos[1]
+}
+
+func cloneGameState(state GameState) GameState {
+	gameState := GameState{
+		PieceList:    make([]int8, len(state.PieceList)),
+		PreGameState: &state,
+	}
+	copy(gameState.PieceList, state.PieceList)
+	return gameState
 }
