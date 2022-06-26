@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+var pow10 []uint64
+var baseDirs [][]int8 // 基础方向，每个棋子的可移动方向
+var flipDir []int8
+
 type Board = [][]int8
 type Shape = [][]bool
 type Pos = []int8
@@ -49,28 +53,41 @@ type GameSolve struct {
 	pieceKindShapeList []PieceKindShape
 	gameStateStrSet    map[string]bool // 局面字符串集合，将局面转字符串（用棋子排序保证唯一），存入集合，{局面字符串}
 	gameStateList      []GameState     // 局面列表，存储所有待计算的局面
-	baseDirs           [][]int8        // 基础方向，每个棋子的可移动方向
-	flipDirList        []int8
+
 }
 
-var tryCount int
+//var tryCount int
 
 func (gs *GameSolve) Init(game GameData) {
+	baseDirs = [][]int8{
+		{1, 0},
+		{0, 1},
+		{-1, 0},
+		{0, -1},
+	}
+	flipDir = []int8{
+		2, 3, 0, 1,
+	}
+	pow10 = []uint64{
+		1,
+		100,
+		10000,
+		1000000,
+		100000000,
+		10000000000,
+		1000000000000,
+		100000000000000,
+		10000000000000000,
+		1000000000000000000,
+	}
+
 	gs.game = game
 	gs.boardRows = game.BoardRows
 	gs.boardCols = game.BoardCols
 	gs.kingPieceIndex = game.KingPieceIndex
 	gs.kingWinPos = game.KingWinPos
 	gs.gameStateStrSet = map[string]bool{}
-	gs.baseDirs = [][]int8{
-		{1, 0},
-		{0, 1},
-		{-1, 0},
-		{0, -1},
-	}
-	gs.flipDirList = []int8{
-		2, 3, 0, 1,
-	}
+
 	kingPiece := game.PieceList[game.KingPieceIndex] // 王棋
 	gs.pieceKindShapeList = make([]PieceKindShape, len(game.PieceList))
 	gs.pieceKindShapeList[game.KingPieceIndex] = PieceKindShape{
@@ -101,8 +118,10 @@ func (gs *GameSolve) Init(game GameData) {
 			}
 		}
 	}
-	startGameState.Board = gs.gameState2Board(startGameState)
-	gs.gameStateStrSet[gs.board2Str(startGameState.Board)] = true // 将开始局面存入局面字符串集合
+	board, boardStr, symmetryBoardStr := gs.gameState2Board(startGameState)
+	startGameState.Board = board
+	gs.gameStateStrSet[boardStr] = true         // 将开始局面存入局面字符串集合
+	gs.gameStateStrSet[symmetryBoardStr] = true // 将开始局面存入局面字符串集合
 	gs.gameStateList = append(gs.gameStateList, startGameState)
 }
 
@@ -119,7 +138,7 @@ func (gs *GameSolve) Solve() ([]Step, error) {
 		for pieceIndex := 0; pieceIndex < len(gameState.PieceList); pieceIndex++ {
 			win, steps := gs.tryMove(gameState, int8(pieceIndex), map[int8]bool{})
 			if win {
-				println(tryCount)
+				//println(tryCount)
 				return steps, nil
 			}
 		}
@@ -132,7 +151,7 @@ func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet ma
 	piece := gameState.PieceList[pieceIndex]
 	pos := pieceToPos(piece)
 	pieceShape := gs.pieceKindShapeList[pieceIndex].Shape
-	for dirIndex, dir := range gs.baseDirs {
+	for dirIndex, dir := range baseDirs {
 		if _, isContains := banDirsSet[int8(dirIndex)]; isContains {
 			continue
 		}
@@ -161,16 +180,20 @@ func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet ma
 				pos[0] + dir[0],
 				pos[1] + dir[1],
 			})
-			newGameState.Board = gs.gameState2Board(newGameState)
-			newGameStateStr := gs.board2Str(newGameState.Board)
-			if _, isContains := gs.gameStateStrSet[newGameStateStr]; isContains {
+			board, boardStr, symmetryBoardStr := gs.gameState2Board(newGameState)
+			newGameState.Board = board
+			if _, isContains := gs.gameStateStrSet[boardStr]; isContains {
 				// 已经存在该局面
 				continue
 			}
-			//println(newGameStateStr)
-			tryCount++
-			gs.gameStateStrSet[newGameStateStr] = true
+			if _, isContains := gs.gameStateStrSet[symmetryBoardStr]; isContains {
+				// 已经存在该局面
+				continue
+			}
 
+			//tryCount++
+			gs.gameStateStrSet[boardStr] = true
+			gs.gameStateStrSet[symmetryBoardStr] = true
 			win := gs.isWin(newGameState)
 			if win {
 				return true, humanSteps(newGameState)
@@ -178,7 +201,7 @@ func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet ma
 
 			// 看看这枚棋子是否能够继续移动
 			newWin, steps := gs.tryMove(newGameState, pieceIndex, map[int8]bool{
-				gs.flipDirList[dirIndex]: true,
+				flipDir[dirIndex]: true,
 			})
 			if newWin {
 				return true, steps
@@ -197,45 +220,37 @@ func (gs *GameSolve) isWin(gameState GameState) bool {
 	return pos[0] == gs.kingWinPos[0] && pos[1] == gs.kingWinPos[1]
 }
 
-func (gs *GameSolve) gameState2Board(gameState GameState) Board {
+func (gs *GameSolve) gameState2Board(gameState GameState) (Board, string, string) {
 	board := make(Board, gs.boardRows)
+	boardForStr := make([]uint64, gs.boardRows)         // 准备一个数组表示棋盘的每一行
+	boardForSymmetryStr := make([]uint64, gs.boardRows) // 准备一个数组表示棋盘的每一行的对称
+
 	for i := int8(0); i < gs.boardRows; i++ {
 		board[i] = make([]int8, gs.boardCols)
+		boardForStr[i] = pow10[gs.boardCols]
+		boardForSymmetryStr[i] = pow10[gs.boardCols]
 	}
 	for pieceIndex, piece := range gameState.PieceList {
 		pos := pieceToPos(piece)
-		pieceShape := gs.pieceKindShapeList[pieceIndex].Shape
-		for rowIndex, row := range pieceShape {
+		pieceKindShape := gs.pieceKindShapeList[pieceIndex]
+		for rowIndex, row := range pieceKindShape.Shape {
 			for colIndex, grid := range row {
 				if grid {
 					board[pos[0]+int8(rowIndex)][pos[1]+int8(colIndex)] = int8(pieceIndex) + 1
+					boardForStr[int(pos[0])+rowIndex] += (uint64(pieceKindShape.Kind) + 1) * pow10[colIndex+int(pos[1])]
+					boardForSymmetryStr[int(pos[0])+rowIndex] += (uint64(pieceKindShape.Kind) + 1) * pow10[int(gs.boardCols)-1-colIndex-int(pos[1])]
 				}
 			}
 		}
 	}
-	return board
-}
+	boardStr := ""
+	symmetryBoardStr := ""
+	for i := 0; i < len(boardForStr); i++ {
+		boardStr += strconv.FormatUint(boardForStr[i], 10)
+		symmetryBoardStr += strconv.FormatUint(boardForSymmetryStr[i], 10)
+	}
+	return board, boardStr, symmetryBoardStr
 
-/**
-棋盘转字符串
-*/
-func (gs *GameSolve) board2Str(board Board) string {
-	res := ""
-	for _, row := range board {
-		for _, grid := range row {
-			if grid > 0 {
-				v := int(gs.pieceKindShapeList[grid-1].Kind + 1)
-				if v < 10 {
-					res += "0" + strconv.Itoa(v)
-				} else {
-					res += strconv.Itoa(v)
-				}
-			} else {
-				res += "00"
-			}
-		}
-	}
-	return res
 }
 
 /**
