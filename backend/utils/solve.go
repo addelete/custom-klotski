@@ -118,10 +118,9 @@ func (gs *GameSolve) Init(game GameData) {
 			}
 		}
 	}
-	board, boardStr, symmetryBoardStr := gs.gameState2Board(startGameState)
+	board, boardStr := gs.gameState2Board(startGameState)
 	startGameState.Board = board
-	gs.gameStateStrSet[boardStr] = true         // 将开始局面存入局面字符串集合
-	gs.gameStateStrSet[symmetryBoardStr] = true // 将开始局面存入局面字符串集合
+	gs.gameStateStrSet[boardStr] = true // 将开始局面存入局面字符串集合
 	gs.gameStateList = append(gs.gameStateList, startGameState)
 }
 
@@ -180,20 +179,15 @@ func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet ma
 				pos[0] + dir[0],
 				pos[1] + dir[1],
 			})
-			board, boardStr, symmetryBoardStr := gs.gameState2Board(newGameState)
+			board, boardStr := gs.gameState2Board(newGameState)
 			newGameState.Board = board
 			if _, isContains := gs.gameStateStrSet[boardStr]; isContains {
-				// 已经存在该局面
-				continue
-			}
-			if _, isContains := gs.gameStateStrSet[symmetryBoardStr]; isContains {
 				// 已经存在该局面
 				continue
 			}
 
 			//tryCount++
 			gs.gameStateStrSet[boardStr] = true
-			gs.gameStateStrSet[symmetryBoardStr] = true
 			win := gs.isWin(newGameState)
 			if win {
 				return true, humanSteps(newGameState)
@@ -220,15 +214,13 @@ func (gs *GameSolve) isWin(gameState GameState) bool {
 	return pos[0] == gs.kingWinPos[0] && pos[1] == gs.kingWinPos[1]
 }
 
-func (gs *GameSolve) gameState2Board(gameState GameState) (Board, string, string) {
+func (gs *GameSolve) gameState2Board(gameState GameState) (Board, string) {
 	board := make(Board, gs.boardRows)
-	boardForStr := make([]uint64, gs.boardRows)         // 准备一个数组表示棋盘的每一行
-	boardForSymmetryStr := make([]uint64, gs.boardRows) // 准备一个数组表示棋盘的每一行的对称
+	boardForStr := make([]uint64, gs.boardRows) // 准备一个数组表示棋盘的每一行
 
 	for i := int8(0); i < gs.boardRows; i++ {
 		board[i] = make([]int8, gs.boardCols)
 		boardForStr[i] = pow10[gs.boardCols]
-		boardForSymmetryStr[i] = pow10[gs.boardCols]
 	}
 	for pieceIndex, piece := range gameState.PieceList {
 		pos := pieceToPos(piece)
@@ -238,18 +230,15 @@ func (gs *GameSolve) gameState2Board(gameState GameState) (Board, string, string
 				if grid {
 					board[pos[0]+int8(rowIndex)][pos[1]+int8(colIndex)] = int8(pieceIndex) + 1
 					boardForStr[int(pos[0])+rowIndex] += (uint64(pieceKindShape.Kind) + 1) * pow10[colIndex+int(pos[1])]
-					boardForSymmetryStr[int(pos[0])+rowIndex] += (uint64(pieceKindShape.Kind) + 1) * pow10[int(gs.boardCols)-1-colIndex-int(pos[1])]
 				}
 			}
 		}
 	}
 	boardStr := ""
-	symmetryBoardStr := ""
 	for i := 0; i < len(boardForStr); i++ {
 		boardStr += strconv.FormatUint(boardForStr[i], 10)
-		symmetryBoardStr += strconv.FormatUint(boardForSymmetryStr[i], 10)
 	}
-	return board, boardStr, symmetryBoardStr
+	return board, boardStr
 
 }
 
