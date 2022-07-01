@@ -482,12 +482,12 @@ export default class GameUtils {
   };
 
   // 填充棋子上的洞
-  static fillPieceHoles = (pieceShape: Shape) => {
-    const rows = pieceShape.length;
-    const cols = pieceShape[0].length;
+  static fillPieceInBoardHoles = (pieceInBoard: Board) => {
+    const rows = pieceInBoard.length;
+    const cols = pieceInBoard[0].length;
     for (let i = 0; i < rows; i++) {
       for (let j = 0; j < cols; j++) {
-        if (!pieceShape[i][j]) {
+        if (!pieceInBoard[i][j]) {
           let edges = 0;
           const dirs = [
             [1, 0],
@@ -501,7 +501,7 @@ export default class GameUtils {
             ri += dy;
             ci += dx;
             while (ri >= 0 && ri < rows && ci >= 0 && ci < cols) {
-              if (pieceShape[ri][ci]) {
+              if (pieceInBoard[ri][ci]) {
                 edges++;
                 break;
               }
@@ -510,7 +510,7 @@ export default class GameUtils {
             }
           });
           if (edges === 4) {
-            pieceShape[i][j] = true;
+            pieceInBoard[i][j] = true;
           }
         }
       }

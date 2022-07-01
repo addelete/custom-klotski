@@ -223,7 +223,7 @@ function GameDesignerPage() {
             }
             const inBoardClone = GameUtils.cloneShape(editingPiece.inBoard)
             inBoardClone[rowIndex][colIndex] = false
-            GameUtils.fillPieceHoles(inBoardClone)
+            GameUtils.fillPieceInBoardHoles(inBoardClone)
             if (inBoardClone[rowIndex][colIndex]) { // 删掉的格子又被自动填上了，说明不能删
                 setState({
                     mouseOverPosWillAction: undefined
@@ -282,16 +282,18 @@ function GameDesignerPage() {
                 editingPiece.inBoard[rowIndex]?.[colIndex - 1]
             )
         ) { // 如果这个格子能和编辑中的砖块连上，则下一步动作为在此格上扩展此砖块
-            // 判断封闭之后是不是会导致包裹其他砖块
+            // 判断新增之后是不是会导致包裹其他砖块
             const editingPieceInBoardClone = GameUtils.cloneShape(editingPiece.inBoard)
             editingPieceInBoardClone[rowIndex][colIndex] = true
-            GameUtils.fillPieceHoles(editingPieceInBoardClone)
+            GameUtils.fillPieceInBoardHoles(editingPieceInBoardClone)
+            const newEditingPiece = GameUtils.pieceFromInBoard(editingPieceInBoardClone) as Piece
             const pieceListInBoard = GameUtils.pieceListInBoard(state.pieceList, state.rows, state.cols)
             let couldExtend = true
-            for (let ri = 0; ri < editingPieceInBoardClone.length; ri++) {
-                for (let ci = 0; ci < editingPieceInBoardClone[ri].length; ci++) {
-                    if (editingPieceInBoardClone[ri][ci]) {
-                        const pieceIndexInBoard = pieceListInBoard[ri + editingPiece.position[0]][ci + editingPiece.position[1]]
+            
+            for (let ri = 0; ri < newEditingPiece.shape.length; ri++) {
+                for (let ci = 0; ci < newEditingPiece.shape[ri].length; ci++) {
+                    if (newEditingPiece.shape[ri][ci]) {
+                        const pieceIndexInBoard = pieceListInBoard[ri + newEditingPiece.position[0]][ci + newEditingPiece.position[1]]
                         if (pieceIndexInBoard > -1 && pieceIndexInBoard !== state.editingPieceIndex) {
                             couldExtend = false
                             break
@@ -401,7 +403,7 @@ function GameDesignerPage() {
         const newInBoard = GameUtils.cloneShape(editingPiece.inBoard);
         const [mRows, mCols] = state.mouseOverPos as Pos;
         newInBoard[mRows][mCols] = true
-        GameUtils.fillPieceHoles(newInBoard)
+        GameUtils.fillPieceInBoardHoles(newInBoard)
         const newPiece = GameUtils.pieceFromInBoard(newInBoard) as Piece
         setState(produce(draft => {
             draft.pieceList[state.editingPieceIndex] = newPiece
