@@ -471,6 +471,7 @@ export default class GameUtils {
     return style;
   }
 
+  // 根据页面大小、棋盘格数计算格子大小
   static calcGridSize = (rows: number, cols: number, minGridSize = 40, maxGridSize = 80) => {
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -479,4 +480,55 @@ export default class GameUtils {
     const gridSize = Math.min(maxWidth / cols, maxHeight / rows);
     return Math.min(Math.max(gridSize, minGridSize), maxGridSize);
   };
+
+  // 填充棋子上的洞
+  static fillPieceHoles = (pieceShape: Shape) => {
+    const rows = pieceShape.length;
+    const cols = pieceShape[0].length;
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        if (!pieceShape[i][j]) {
+          let edges = 0;
+          const dirs = [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ];
+          dirs.forEach(([dy, dx]) => {
+            let ri = i;
+            let ci = j;
+            ri += dy;
+            ci += dx;
+            while (ri >= 0 && ri < rows && ci >= 0 && ci < cols) {
+              if (pieceShape[ri][ci]) {
+                edges++;
+                break;
+              }
+              ri += dy;
+              ci += dx;
+            }
+          });
+          if (edges === 4) {
+            pieceShape[i][j] = true;
+          }
+        }
+      }
+    }
+  };
+
+  // 把棋子放在棋盘上，棋子覆盖的位置填充棋子的index
+  static pieceListInBoard = (pieceList: Piece[], boardRows: number, boardCols: number) => {
+    const board = Array.from({ length: boardRows }, () => Array.from({ length: boardCols }, () => -1));
+    pieceList.forEach((piece, pieceIndex) => {
+      piece.shape.forEach((row, ri) => {
+        row.forEach((cell, ci) => {
+          if (cell) {
+            board[ri + piece.position[0]][ci + piece.position[1]] = pieceIndex;
+          }
+        });
+      });
+    });
+    return board;
+  }
 }

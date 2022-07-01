@@ -221,9 +221,16 @@ function GameDesignerPage() {
                 })
                 return
             }
-
             const inBoardClone = GameUtils.cloneShape(editingPiece.inBoard)
             inBoardClone[rowIndex][colIndex] = false
+            GameUtils.fillPieceHoles(inBoardClone)
+            if (inBoardClone[rowIndex][colIndex]) { // 删掉的格子又被自动填上了，说明不能删
+                setState({
+                    mouseOverPosWillAction: undefined
+                })
+                return
+            }
+
             const firstPos = [
                 [rowIndex + 1, colIndex],
                 [rowIndex - 1, colIndex],
@@ -275,10 +282,33 @@ function GameDesignerPage() {
                 editingPiece.inBoard[rowIndex]?.[colIndex - 1]
             )
         ) { // 如果这个格子能和编辑中的砖块连上，则下一步动作为在此格上扩展此砖块
-            setState({
-                mouseOverPosWillAction: 'extend'
-            })
-            return;
+            // 判断封闭之后是不是会导致包裹其他砖块
+            const editingPieceInBoardClone = GameUtils.cloneShape(editingPiece.inBoard)
+            editingPieceInBoardClone[rowIndex][colIndex] = true
+            GameUtils.fillPieceHoles(editingPieceInBoardClone)
+            const pieceListInBoard = GameUtils.pieceListInBoard(state.pieceList, state.rows, state.cols)
+            let couldExtend = true
+            for (let ri = 0; ri < editingPieceInBoardClone.length; ri++) {
+                for (let ci = 0; ci < editingPieceInBoardClone[ri].length; ci++) {
+                    if (editingPieceInBoardClone[ri][ci]) {
+                        const pieceIndexInBoard = pieceListInBoard[ri + editingPiece.position[0]][ci + editingPiece.position[1]]
+                        if (pieceIndexInBoard > -1 && pieceIndexInBoard !== state.editingPieceIndex) {
+                            couldExtend = false
+                            break
+                        }
+                    }
+                }
+                if (couldExtend === false) {
+                    break
+                }
+            }
+            if (couldExtend) {
+                setState({
+                    mouseOverPosWillAction: 'extend'
+                })
+                return;
+            }
+
         }
 
 
@@ -371,6 +401,7 @@ function GameDesignerPage() {
         const newInBoard = GameUtils.cloneShape(editingPiece.inBoard);
         const [mRows, mCols] = state.mouseOverPos as Pos;
         newInBoard[mRows][mCols] = true
+        GameUtils.fillPieceHoles(newInBoard)
         const newPiece = GameUtils.pieceFromInBoard(newInBoard) as Piece
         setState(produce(draft => {
             draft.pieceList[state.editingPieceIndex] = newPiece
@@ -438,7 +469,7 @@ function GameDesignerPage() {
     const deletePiece = useMemoizedFn((pieceIndex: number) => {
         setState(produce(draft => {
             draft.pieceList.splice(pieceIndex, 1)
-            draft.kingPieceIndex =  state.kingPieceIndex === pieceIndex ? -1 : (state.kingPieceIndex > pieceIndex ? state.kingPieceIndex - 1 : state.kingPieceIndex)
+            draft.kingPieceIndex = state.kingPieceIndex === pieceIndex ? -1 : (state.kingPieceIndex > pieceIndex ? state.kingPieceIndex - 1 : state.kingPieceIndex)
         }))
     })
 

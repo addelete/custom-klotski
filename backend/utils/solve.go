@@ -45,10 +45,8 @@ type PieceKindShape struct {
 }
 
 type GameSolve struct {
-	game               GameData
 	boardRows          int8
 	boardCols          int8
-	kingPieceIndex     int8
 	kingWinPos         Pos
 	pieceKindShapeList []PieceKindShape
 	gameStateStrSet    map[string]bool // 局面字符串集合，将局面转字符串（用棋子排序保证唯一），存入集合，{局面字符串}
@@ -81,24 +79,22 @@ func (gs *GameSolve) Init(game GameData) {
 		1000000000000000000,
 	}
 
-	gs.game = game
 	gs.boardRows = game.BoardRows
 	gs.boardCols = game.BoardCols
-	gs.kingPieceIndex = game.KingPieceIndex
 	gs.kingWinPos = game.KingWinPos
 	gs.gameStateStrSet = map[string]bool{}
 
 	kingPiece := game.PieceList[game.KingPieceIndex] // 王棋
-	gs.pieceKindShapeList = make([]PieceKindShape, len(game.PieceList))
-	gs.pieceKindShapeList[game.KingPieceIndex] = PieceKindShape{
+	gs.pieceKindShapeList = make([]PieceKindShape, 0)
+	gs.pieceKindShapeList = append(gs.pieceKindShapeList, PieceKindShape{
 		Kind:  0,
 		Shape: kingPiece.Shape,
-	}
+	})
 	pieceKindStrMap := make(map[string]int8)
 	startGameState := GameState{
-		PieceList: make([]int8, len(game.PieceList)),
+		PieceList: make([]int8, 0),
 	} // 开局局面，存储棋子类型和位置，方便后续甄别是否重复局面，[棋子索引:棋子类型+位置]
-	startGameState.PieceList[game.KingPieceIndex] = posToPiece(kingPiece.Position) // 将王棋放入局面
+	startGameState.PieceList = append(startGameState.PieceList, posToPiece(kingPiece.Position)) // 将王棋放入局面
 	kindCount := int8(0)
 	// 完善棋子类型列表、棋子形状与类型的映射、开局局面
 	for i, piece := range game.PieceList {
@@ -110,14 +106,15 @@ func (gs *GameSolve) Init(game GameData) {
 				kind = kindCount
 				pieceKindStrMap[shapeStr] = kind
 			}
-			startGameState.PieceList[i] = posToPiece(piece.Position)
+			startGameState.PieceList = append(startGameState.PieceList, posToPiece(piece.Position))
 
-			gs.pieceKindShapeList[i] = PieceKindShape{
+			gs.pieceKindShapeList = append(gs.pieceKindShapeList, PieceKindShape{
 				Kind:  kind,
 				Shape: piece.Shape,
-			}
+			})
 		}
 	}
+
 	board, boardStr := gs.gameState2Board(startGameState)
 	startGameState.Board = board
 	gs.gameStateStrSet[boardStr] = true // 将开始局面存入局面字符串集合
@@ -125,9 +122,10 @@ func (gs *GameSolve) Init(game GameData) {
 }
 
 func (gs *GameSolve) Solve() ([]Step, error) {
-	kingPiece := gs.game.PieceList[gs.game.KingPieceIndex] // 王棋
+	startGameState := gs.gameStateList[0]
+	kingPiece := startGameState.PieceList[0] // 王棋
 	// 判断开始局面是否已经赢了
-	if kingPiece.Position[0] == gs.kingWinPos[0] && kingPiece.Position[1] == gs.kingWinPos[1] {
+	if kingPiece == posToPiece(gs.kingWinPos) {
 		return []Step{}, nil
 	}
 
@@ -210,7 +208,7 @@ func (gs *GameSolve) tryMove(gameState GameState, pieceIndex int8, banDirsSet ma
 }
 
 func (gs *GameSolve) isWin(gameState GameState) bool {
-	pos := pieceToPos(gameState.PieceList[gs.kingPieceIndex])
+	pos := pieceToPos(gameState.PieceList[0])
 	return pos[0] == gs.kingWinPos[0] && pos[1] == gs.kingWinPos[1]
 }
 
