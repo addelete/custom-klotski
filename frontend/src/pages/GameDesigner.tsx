@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useMemoizedFn, useSetState, useUpdateEffect } from 'ahooks';
 import produce from 'immer';
-import { Layer, Path, Rect, Stage } from 'react-konva';
+import { Group, Layer, Path, Rect, Stage } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -43,10 +43,10 @@ function GameDesignerPage() {
         door?: Door;
         solveLoading: boolean;
     }>({
-        cols: 4,
         rows: 5,
+        cols: 4,
         gridSize: 0,
-        pieceList: [],
+        pieceList: [], //JSON.parse(localStorage.getItem('pieceList') || '[]'),//TOD [],
         editingPieceIndex: -1,
         editingPieceDashOffset: 0,
         kingPieceIndex: -1,
@@ -69,6 +69,13 @@ function GameDesignerPage() {
     })
 
     const mouseOverPosStrRef = useRef<number[]>([-1, -1])
+
+    // // TOD remove
+    // useUpdateEffect(() => {
+    //     localStorage.setItem('pieceList', JSON.stringify(state.pieceList))
+    // }, [state.pieceList])
+
+
 
 
     // 从路由中获取布局和游戏数据
@@ -221,16 +228,9 @@ function GameDesignerPage() {
                 })
                 return
             }
+
             const inBoardClone = GameUtils.cloneShape(editingPiece.inBoard)
             inBoardClone[rowIndex][colIndex] = false
-            GameUtils.fillPieceInBoardHoles(inBoardClone)
-            if (inBoardClone[rowIndex][colIndex]) { // 删掉的格子又被自动填上了，说明不能删
-                setState({
-                    mouseOverPosWillAction: undefined
-                })
-                return
-            }
-
             const firstPos = [
                 [rowIndex + 1, colIndex],
                 [rowIndex - 1, colIndex],
@@ -282,35 +282,10 @@ function GameDesignerPage() {
                 editingPiece.inBoard[rowIndex]?.[colIndex - 1]
             )
         ) { // 如果这个格子能和编辑中的砖块连上，则下一步动作为在此格上扩展此砖块
-            // 判断新增之后是不是会导致包裹其他砖块
-            const editingPieceInBoardClone = GameUtils.cloneShape(editingPiece.inBoard)
-            editingPieceInBoardClone[rowIndex][colIndex] = true
-            GameUtils.fillPieceInBoardHoles(editingPieceInBoardClone)
-            const newEditingPiece = GameUtils.pieceFromInBoard(editingPieceInBoardClone) as Piece
-            const pieceListInBoard = GameUtils.pieceListInBoard(state.pieceList, state.rows, state.cols)
-            let couldExtend = true
-            
-            for (let ri = 0; ri < newEditingPiece.shape.length; ri++) {
-                for (let ci = 0; ci < newEditingPiece.shape[ri].length; ci++) {
-                    if (newEditingPiece.shape[ri][ci]) {
-                        const pieceIndexInBoard = pieceListInBoard[ri + newEditingPiece.position[0]][ci + newEditingPiece.position[1]]
-                        if (pieceIndexInBoard > -1 && pieceIndexInBoard !== state.editingPieceIndex) {
-                            couldExtend = false
-                            break
-                        }
-                    }
-                }
-                if (couldExtend === false) {
-                    break
-                }
-            }
-            if (couldExtend) {
-                setState({
-                    mouseOverPosWillAction: 'extend'
-                })
-                return;
-            }
-
+            setState({
+                mouseOverPosWillAction: 'extend'
+            })
+            return;
         }
 
 
@@ -403,7 +378,6 @@ function GameDesignerPage() {
         const newInBoard = GameUtils.cloneShape(editingPiece.inBoard);
         const [mRows, mCols] = state.mouseOverPos as Pos;
         newInBoard[mRows][mCols] = true
-        GameUtils.fillPieceInBoardHoles(newInBoard)
         const newPiece = GameUtils.pieceFromInBoard(newInBoard) as Piece
         setState(produce(draft => {
             draft.pieceList[state.editingPieceIndex] = newPiece
@@ -641,7 +615,7 @@ function GameDesignerPage() {
     const editingPiecePath = useMemo(() => {
         const piece = state.pieceList[state.editingPieceIndex]
         if (!piece) {
-            return undefined
+            return []
         }
         let cloneInBoard = GameUtils.cloneShape(piece.inBoard)
         if (state.mouseOverPos && state.mouseOverPosWillAction === 'extend') {
@@ -652,9 +626,9 @@ function GameDesignerPage() {
         }
         const isEmpty = cloneInBoard.findIndex(row => row.findIndex(grid => grid) !== -1) == -1
         if (isEmpty) {
-            return undefined
+            return []
         }
-        return GameUtils.shape2Path(
+        return GameUtils.shape2PathsWithHoles(
             cloneInBoard,
             state.gridSize,
             state.gridSize / 10,
@@ -830,16 +804,19 @@ function GameDesignerPage() {
                                     ))}
                                 </Layer>
                                 {/* 砖块 */}
-                                <Layer x={2} y={2}>
-                                    {state.pieceList.map((piece, pieceIndex) => (
-                                        <PieceItem
-                                            key={pieceIndex}
-                                            piece={piece}
-                                            color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
-                                            gridSize={state.gridSize}
-                                        />
-                                    ))}
-                                </Layer>
+                                {state.pieceList.map((piece, pieceIndex) => (
+                                    <PieceItem
+                                        key={pieceIndex}
+                                        piece={piece}
+                                        color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
+                                        gridSize={state.gridSize}
+                                        x={2}
+                                        y={2}
+                                    />
+                                ))}
+                                {/* <Layer x={2} y={2}>
+
+                                </Layer> */}
                                 {/* 操作高亮 */}
                                 <Layer x={2} y={2}>
                                     {state.mouseOverPos && state.mouseOverPosWillAction === 'create' ? (
@@ -855,14 +832,14 @@ function GameDesignerPage() {
                                     ) : null}
                                 </Layer>
                                 <Layer x={2} y={2}>
-                                    {editingPiecePath ? (
-                                        <>
+                                    {editingPiecePath.map((pathItem, index) => (
+                                        <Group key={index}>
                                             <Path
                                                 y={0}
                                                 x={0}
                                                 strokeWidth={3}
                                                 stroke='#ffffff'
-                                                data={editingPiecePath}
+                                                data={pathItem}
                                                 dash={[10, 10]}
                                                 dashOffset={state.editingPieceDashOffset}
                                             />
@@ -871,13 +848,12 @@ function GameDesignerPage() {
                                                 x={0}
                                                 strokeWidth={3}
                                                 stroke='#000'
-                                                data={editingPiecePath}
+                                                data={pathItem}
                                                 dash={[10, 10]}
                                                 dashOffset={state.editingPieceDashOffset + 10}
                                             />
-                                        </>
-
-                                    ) : null}
+                                        </Group>
+                                    ))}
 
                                 </Layer>
                             </Stage>

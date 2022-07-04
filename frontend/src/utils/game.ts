@@ -432,6 +432,194 @@ export default class GameUtils {
     return path;
   }
 
+  static shapeFillNum2Path(
+    shapeFilledNum: number[][],
+    gridSize: number,
+    gridBorderRadius: number,
+    offsetX = 0,
+    offsetY = 0
+  ) {
+    const findStartPoint = (shape: number[][]): number | undefined => {
+      for (let i = 0; i < shape.length; i++) {
+        for (let j = 0; j < shape[i].length; j++) {
+          if (shape[i][j] === 99) {
+            return i * 10 + j;
+          }
+        }
+      }
+    };
+    
+    // path开始的点
+    const startPoint = findStartPoint(shapeFilledNum);
+    if(!startPoint) return ""
+    const points = [startPoint];
+    const pointToPos = (point: number) => {
+      return [Math.floor(point / 10), point % 10];
+    };
+    while (true) {
+      const prevPoint = points.length > 1 ? points[points.length - 2] : null;
+      const currentPoint = points[points.length - 1];
+      const currentPos = pointToPos(currentPoint);
+      // 查出点周围的四个格子的值，越界的格子值为-1
+      const grid1 = shapeFilledNum[currentPos[0] - 1]?.[currentPos[1]] || -1;
+      const grid2 = shapeFilledNum[currentPos[0] - 1]?.[currentPos[1] - 1] || -1;
+      const grid3 = shapeFilledNum[currentPos[0]]?.[currentPos[1] - 1] || -1;
+      const grid4 = shapeFilledNum[currentPos[0]]?.[currentPos[1]] || -1;
+      let nextPoint: number | null = null;
+      if (grid1 + grid2 === 98 && currentPoint - 10 !== prevPoint) {
+        nextPoint = currentPoint - 10;
+      } else if (grid3 + grid4 === 98 && currentPoint + 10 !== prevPoint) {
+        nextPoint = currentPoint + 10;
+      } else if (grid2 + grid3 === 98 && currentPoint - 1 !== prevPoint) {
+        nextPoint = currentPoint - 1;
+      } else if (grid1 + grid4 === 98 && currentPoint + 1 !== prevPoint) {
+        nextPoint = currentPoint + 1;
+      }
+      if (!nextPoint) {
+        return '';
+      }
+      if (nextPoint === startPoint) {
+        break;
+      }
+      points.push(nextPoint);
+    }
+    const middle = gridSize - gridBorderRadius * 2;
+    let path = '';
+    for (let i = 0; i < points.length; i++) {
+      const prevPoint = i === 0 ? points[points.length - 1] : points[i - 1];
+      const currPoint = points[i];
+      const nextPoint = i === points.length - 1 ? points[0] : points[i + 1];
+
+      const prevPos = pointToPos(prevPoint);
+      const currPos = pointToPos(currPoint);
+      const nextPos = pointToPos(nextPoint);
+
+      let pathOverPoint = ''; // 过这个点的一段path，是一段圆弧或线段
+      const pathOverPointStart = {
+        x: currPos[1] * gridSize + gridBorderRadius * (prevPos[1] - currPos[1]),
+        y: currPos[0] * gridSize + gridBorderRadius * (prevPos[0] - currPos[0]),
+      };
+      const pathOverPointEnd = {
+        x: currPos[1] * gridSize + gridBorderRadius * (nextPos[1] - currPos[1]),
+        y: currPos[0] * gridSize + gridBorderRadius * (nextPos[0] - currPos[0]),
+      };
+      if (nextPoint - currPoint === currPoint - prevPoint) {
+        // 不拐弯
+        pathOverPoint = `L ${pathOverPointStart.x + offsetX} ${pathOverPointStart.y + offsetY} `;
+      } else {
+        // 总结点位变化与画弧的关系
+        const sweepflag =
+          [
+            [1, 10],
+            [10, -1],
+            [-1, -10],
+            [-10, 1],
+          ].findIndex(
+            (item) => currPoint - prevPoint === item[0] && nextPoint - currPoint === item[1]
+          ) > -1
+            ? 1
+            : 0;
+        // console.log(prevPoint, currPoint, nextPoint, sweepflag);
+        pathOverPoint = `A ${gridBorderRadius} ${gridBorderRadius} 0 0 ${sweepflag} ${
+          pathOverPointEnd.x + offsetX
+        } ${pathOverPointEnd.y + offsetY} `;
+      }
+
+      const pathOnEdgeEnd = {
+        x: currPos[1] * gridSize + (middle + gridBorderRadius) * (nextPos[1] - currPos[1]),
+        y: currPos[0] * gridSize + (middle + gridBorderRadius) * (nextPos[0] - currPos[0]),
+      };
+
+      const pathOnEdge = `L ${pathOnEdgeEnd.x + offsetX} ${pathOnEdgeEnd.y + offsetY} `;
+      const prefixPath =
+        i === 0 ? `M ${pathOverPointStart.x + offsetX} ${pathOverPointStart.y + offsetY} ` : '';
+      const suffixPath = i === points.length - 1 ? `Z` : '';
+      path += prefixPath + pathOverPoint + pathOnEdge + suffixPath;
+    }
+    return path;
+  }
+
+  /**
+   * 棋子路径
+   */
+  static shape2PathsWithHoles(
+    shape: Shape,
+    gridSize: number,
+    gridBorderRadius: number,
+    offsetX = 0,
+    offsetY = 0
+  ) {
+    // GameUtils.printShape(shape);
+    // const shapePath = GameUtils.shape2Path(shape, gridSize, gridBorderRadius, offsetX, offsetY); // 计算底图
+    const shapeFillNum: number[][] = Array(shape.length)
+      .fill(0)
+      .map(() => Array(shape[0].length).fill(99));
+    // 找出所有的洞
+    let minHoleIndex = 0;
+    const replaceNum = (from: number, to: number) => {
+      for (let i = 0; i < shapeFillNum.length; i++) {
+        for (let j = 0; j < shapeFillNum[i].length; j++) {
+          if (shapeFillNum[i][j] === from) {
+            shapeFillNum[i][j] = to;
+          }
+        }
+      }
+    };
+    for (let sri = 0; sri < shape.length; sri++) {
+      for (let sci = 0; sci < shape[sri].length; sci++) {
+        if (shape[sri][sci] === false) {
+          if (sci === 0 || sri === 0) {
+            shapeFillNum[sri][sci] = -1;
+            continue;
+          }
+          const left = shapeFillNum[sri][sci - 1];
+          const top = shapeFillNum[sri - 1][sci];
+          const min = Math.min(left, top);
+          const max = Math.max(left, top);
+          if (sci === shape[sri].length - 1 || sri === shape.length - 1) {
+            shapeFillNum[sri][sci] = -1;
+          } else if (min === -1 || max === -1) {
+            shapeFillNum[sri][sci] = -1;
+          } else if (min === 99) {
+            minHoleIndex++;
+            shapeFillNum[sri][sci] = minHoleIndex;
+          } else {
+            shapeFillNum[sri][sci] = min;
+          }
+          if (max < 99 && max > shapeFillNum[sri][sci]) {
+            replaceNum(max, shapeFillNum[sri][sci]);
+          }
+        }
+      }
+    }
+    // printShapeFillNum(shapeFillNum);
+
+
+    let holeShapeFillNums: number[][][] = [];
+    for (let ri = 0; ri < shapeFillNum.length; ri++) {
+      for (let ci = 0; ci < shapeFillNum[0].length; ci++) {
+        if (shapeFillNum[ri][ci] > 0 && shapeFillNum[ri][ci] < 99) {
+          if (!holeShapeFillNums[shapeFillNum[ri][ci] - 1]) {
+            holeShapeFillNums[shapeFillNum[ri][ci] - 1] = Array(shapeFillNum.length)
+              .fill(0)
+              .map(() => Array(shapeFillNum[0].length).fill(-1));
+          }
+          holeShapeFillNums[shapeFillNum[ri][ci] - 1][ri][ci] = 99;
+        }
+      }
+    }
+
+    // holeShapeFillNums.forEach(item => printShapeFillNum(item))
+
+
+    return [
+      GameUtils.shapeFillNum2Path(shapeFillNum, gridSize, gridBorderRadius, offsetX, offsetY),
+      ...holeShapeFillNums.map((holeShapeFillNum) =>
+        GameUtils.shapeFillNum2Path(holeShapeFillNum, gridSize, gridBorderRadius, offsetX, offsetY)
+      ),
+    ];
+  }
+
   static cloneShape(board: Board): Board {
     return board.map((row) => [...row]);
   }
@@ -471,7 +659,6 @@ export default class GameUtils {
     return style;
   }
 
-  // 根据页面大小、棋盘格数计算格子大小
   static calcGridSize = (rows: number, cols: number, minGridSize = 40, maxGridSize = 80) => {
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -481,54 +668,30 @@ export default class GameUtils {
     return Math.min(Math.max(gridSize, minGridSize), maxGridSize);
   };
 
-  // 填充棋子上的洞
-  static fillPieceInBoardHoles = (pieceInBoard: Board) => {
-    const rows = pieceInBoard.length;
-    const cols = pieceInBoard[0].length;
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        if (!pieceInBoard[i][j]) {
-          let edges = 0;
-          const dirs = [
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [0, -1],
-          ];
-          dirs.forEach(([dy, dx]) => {
-            let ri = i;
-            let ci = j;
-            ri += dy;
-            ci += dx;
-            while (ri >= 0 && ri < rows && ci >= 0 && ci < cols) {
-              if (pieceInBoard[ri][ci]) {
-                edges++;
-                break;
-              }
-              ri += dy;
-              ci += dx;
-            }
-          });
-          if (edges === 4) {
-            pieceInBoard[i][j] = true;
-          }
-        }
-      }
-    }
-  };
+  // static printShape = (shape: Shape) => {
+  //   console.log('>>>>>>>>>>>>>>>>');
+  //   for (let sri = 0; sri < shape.length; sri++) {
+  //     let str = '';
+  //     for (let sci = 0; sci < shape[sri].length; sci++) {
+  //       str += shape[sri][sci] ? '  1' : '  0';
+  //     }
+  //     console.log(str);
+  //   }
+  // };
+}
 
-  // 把棋子放在棋盘上，棋子覆盖的位置填充棋子的index
-  static pieceListInBoard = (pieceList: Piece[], boardRows: number, boardCols: number) => {
-    const board = Array.from({ length: boardRows }, () => Array.from({ length: boardCols }, () => -1));
-    pieceList.forEach((piece, pieceIndex) => {
-      piece.shape.forEach((row, ri) => {
-        row.forEach((cell, ci) => {
-          if (cell) {
-            board[ri + piece.position[0]][ci + piece.position[1]] = pieceIndex;
-          }
-        });
-      });
-    });
-    return board;
-  }
+
+function printShapeFillNum(shapeFillNum: number[][]) {
+      console.log('=====================');
+    for (let sri = 0; sri < shapeFillNum.length; sri++) {
+      let str = '';
+      for (let sci = 0; sci < shapeFillNum[sri].length; sci++) {
+        str +=
+          shapeFillNum[sri][sci] >= 0 && shapeFillNum[sri][sci] < 10
+            ? '  ' + shapeFillNum[sri][sci]
+            : ' ' + shapeFillNum[sri][sci];
+      }
+      console.log(str);
+    }
+
 }

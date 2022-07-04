@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Path } from 'react-konva';
+import { Layer, Path } from 'react-konva';
 import Konva from "konva";
 import GameUtils from '@/src/utils/game';
 
@@ -11,29 +11,47 @@ type PieceItemProps = {
   onDragStart?: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragEnd?: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  x?: number;
+  y?: number;
 }
 
 export function PieceItem({
   piece,
   color,
   gridSize,
+  x = 0,
+  y = 0,
   ...otherProps
 }: PieceItemProps) {
 
 
-  const shapePath = useMemo(() => {
-    return GameUtils.shape2Path(piece.inBoard, gridSize, gridSize / 10);
+  const [shapePath, ...holePaths] = useMemo(() => {
+    return GameUtils.shape2PathsWithHoles(piece.inBoard, gridSize, gridSize / 10);
   }, [piece, gridSize]);
 
+  // console.log(holePaths)
   // console.log(shapePath)
 
   return (
-    <Path
-      fill={color}
-      strokeWidth={3}
-      stroke='black'
-      data={shapePath}
-      {...otherProps}
-    />
+    <Layer x={x} y={y}>
+      <Path
+        fill={color}
+        strokeWidth={3}
+        stroke='black'
+        data={shapePath}
+        {...otherProps}
+      />
+      {holePaths.map((path, index) => (
+        <Path
+          key={index}
+          fill="red"
+          strokeWidth={3}
+          stroke='black'
+          data={path}
+          {...otherProps}
+          globalCompositeOperation='destination-out'
+        />
+      ))}
+    </Layer>
   );
 }
