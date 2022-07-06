@@ -46,7 +46,7 @@ function GameDesignerPage() {
         rows: 5,
         cols: 4,
         gridSize: 0,
-        pieceList: [], //JSON.parse(localStorage.getItem('pieceList') || '[]'),//TOD [],
+        pieceList: [],
         editingPieceIndex: -1,
         editingPieceDashOffset: 0,
         kingPieceIndex: -1,
@@ -69,12 +69,6 @@ function GameDesignerPage() {
     })
 
     const mouseOverPosStrRef = useRef<number[]>([-1, -1])
-
-    // // TOD remove
-    // useUpdateEffect(() => {
-    //     localStorage.setItem('pieceList', JSON.stringify(state.pieceList))
-    // }, [state.pieceList])
-
 
 
 
@@ -272,6 +266,7 @@ function GameDesignerPage() {
             }
         }
 
+        
 
         if (
             !board[rowIndex][colIndex] &&
@@ -365,7 +360,6 @@ function GameDesignerPage() {
         }
 
     })
-
 
     /**
      * 扩展棋子
@@ -613,6 +607,7 @@ function GameDesignerPage() {
 
 
     const editingPiecePath = useMemo(() => {
+        
         const piece = state.pieceList[state.editingPieceIndex]
         if (!piece) {
             return []
@@ -628,11 +623,14 @@ function GameDesignerPage() {
         if (isEmpty) {
             return []
         }
+
         return GameUtils.shape2PathsWithHoles(
             cloneInBoard,
             state.gridSize,
             state.gridSize / 10,
         )
+
+        
 
     }, [state.gridSize, state.pieceList, state.editingPieceIndex, state.mouseOverPos, state.mouseOverPosWillAction])
 

@@ -15,7 +15,7 @@ import './GameSolution.less'
 
 export default function GameSolutionPage() {
   const navigate = useNavigate()
-  const {t} = useTranslation()
+  const { t } = useTranslation()
 
   const [state, setState] = useSetState<{
     stepIndex: number;
@@ -154,16 +154,14 @@ export default function GameSolutionPage() {
                   ))}
                 </Layer>
                 {/* 砖块 */}
-                <Layer x={2} y={2}>
-                  {state.pieceList.map((piece, pieceIndex) => (
-                    <PieceItem
-                      key={pieceIndex}
-                      piece={piece}
-                      color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
-                      gridSize={state.gridSize}
-                    />
-                  ))}
-                </Layer>
+                {state.pieceList.map((piece, pieceIndex) => (
+                  <PieceItem
+                    key={pieceIndex}
+                    piece={piece}
+                    color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
+                    gridSize={state.gridSize}
+                  />
+                ))}
               </Stage>
             </div>
           </div>

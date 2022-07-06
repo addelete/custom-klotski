@@ -299,20 +299,19 @@ export default class GameUtils {
     svg.appendChild(doorPath);
     // 棋子
     for (let i = 0; i < gameData.pieceList.length; i++) {
-      const piecePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      piecePath.setAttribute(
-        'd',
-        GameUtils.shape2Path(
-          gameData.pieceList[i].inBoard,
-          gridSize,
-          gridBorderRadius,
-          borderSize,
-          borderSize
-        )
+      const paths = GameUtils.shape2PathsWithHoles(
+        gameData.pieceList[i].inBoard,
+        gridSize,
+        gridBorderRadius,
+        borderSize,
+        borderSize
       );
+      const piecePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      piecePath.setAttribute('d', paths.join(" "));
       piecePath.setAttribute('fill', i === gameData.kingPieceIndex ? '#fffb00' : '#0ed07e');
       piecePath.setAttribute('stroke', '#000');
       piecePath.setAttribute('stroke-width', '2');
+      piecePath.setAttribute('fill-rule', 'evenodd');
       svg.appendChild(piecePath);
     }
 
@@ -448,10 +447,10 @@ export default class GameUtils {
         }
       }
     };
-    
+
     // path开始的点
     const startPoint = findStartPoint(shapeFilledNum);
-    if(!startPoint) return ""
+    if (startPoint === undefined) return '';
     const points = [startPoint];
     const pointToPos = (point: number) => {
       return [Math.floor(point / 10), point % 10];
@@ -465,7 +464,7 @@ export default class GameUtils {
       const grid2 = shapeFilledNum[currentPos[0] - 1]?.[currentPos[1] - 1] || -1;
       const grid3 = shapeFilledNum[currentPos[0]]?.[currentPos[1] - 1] || -1;
       const grid4 = shapeFilledNum[currentPos[0]]?.[currentPos[1]] || -1;
-      let nextPoint: number | null = null;
+      let nextPoint: number | undefined;
       if (grid1 + grid2 === 98 && currentPoint - 10 !== prevPoint) {
         nextPoint = currentPoint - 10;
       } else if (grid3 + grid4 === 98 && currentPoint + 10 !== prevPoint) {
@@ -475,7 +474,7 @@ export default class GameUtils {
       } else if (grid1 + grid4 === 98 && currentPoint + 1 !== prevPoint) {
         nextPoint = currentPoint + 1;
       }
-      if (!nextPoint) {
+      if (nextPoint === undefined) {
         return '';
       }
       if (nextPoint === startPoint) {
@@ -592,8 +591,8 @@ export default class GameUtils {
         }
       }
     }
-    // printShapeFillNum(shapeFillNum);
 
+    // printShapeFillNum(shapeFillNum);
 
     let holeShapeFillNums: number[][][] = [];
     for (let ri = 0; ri < shapeFillNum.length; ri++) {
@@ -610,7 +609,6 @@ export default class GameUtils {
     }
 
     // holeShapeFillNums.forEach(item => printShapeFillNum(item))
-
 
     return [
       GameUtils.shapeFillNum2Path(shapeFillNum, gridSize, gridBorderRadius, offsetX, offsetY),
@@ -680,18 +678,16 @@ export default class GameUtils {
   // };
 }
 
-
 function printShapeFillNum(shapeFillNum: number[][]) {
-      console.log('=====================');
-    for (let sri = 0; sri < shapeFillNum.length; sri++) {
-      let str = '';
-      for (let sci = 0; sci < shapeFillNum[sri].length; sci++) {
-        str +=
-          shapeFillNum[sri][sci] >= 0 && shapeFillNum[sri][sci] < 10
-            ? '  ' + shapeFillNum[sri][sci]
-            : ' ' + shapeFillNum[sri][sci];
-      }
-      console.log(str);
+  console.log('=====================');
+  for (let sri = 0; sri < shapeFillNum.length; sri++) {
+    let str = '';
+    for (let sci = 0; sci < shapeFillNum[sri].length; sci++) {
+      str +=
+        shapeFillNum[sri][sci] >= 0 && shapeFillNum[sri][sci] < 10
+          ? '  ' + shapeFillNum[sri][sci]
+          : ' ' + shapeFillNum[sri][sci];
     }
-
+    console.log(str);
+  }
 }

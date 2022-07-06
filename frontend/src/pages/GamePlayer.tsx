@@ -228,16 +228,16 @@ export default function GamePlayerPage() {
                   ))}
                 </Layer>
                 {/* 砖块 */}
-                <Layer x={2} y={2}>
-                  {state.pieceList.map((piece, pieceIndex) => (
-                    <PieceItem
-                      key={pieceIndex}
-                      piece={piece}
-                      color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
-                      gridSize={state.gridSize}
-                    />
-                  ))}
-                </Layer>
+                {state.pieceList.map((piece, pieceIndex) => (
+                  <PieceItem
+                    key={pieceIndex}
+                    piece={piece}
+                    color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
+                    gridSize={state.gridSize}
+                    x={2}
+                    y={2}
+                  />
+                ))}
               </Stage>
             </div>
           </div>
