@@ -75,7 +75,7 @@ function GameDesignerPage() {
     // 从路由中获取布局和游戏数据
     useEffect(() => {
         if (currentGame.gameData) {
-            console.log('GameDesignerPage useEffect', currentGame.gameData)
+            // console.log('GameDesignerPage useEffect', currentGame.gameData)
             setState({
                 pieceList: currentGame.gameData.pieceList,
                 rows: currentGame.gameData.boardRows,

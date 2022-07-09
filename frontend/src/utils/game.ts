@@ -465,6 +465,7 @@ export default class GameUtils {
       const grid3 = shapeFilledNum[currentPos[0]]?.[currentPos[1] - 1] || -1;
       const grid4 = shapeFilledNum[currentPos[0]]?.[currentPos[1]] || -1;
       let nextPoint: number | undefined;
+     
       if (grid1 + grid2 === 98 && currentPoint - 10 !== prevPoint) {
         nextPoint = currentPoint - 10;
       } else if (grid3 + grid4 === 98 && currentPoint + 10 !== prevPoint) {
@@ -518,7 +519,6 @@ export default class GameUtils {
           ) > -1
             ? 1
             : 0;
-        // console.log(prevPoint, currPoint, nextPoint, sweepflag);
         pathOverPoint = `A ${gridBorderRadius} ${gridBorderRadius} 0 0 ${sweepflag} ${
           pathOverPointEnd.x + offsetX
         } ${pathOverPointEnd.y + offsetY} `;
@@ -548,11 +548,12 @@ export default class GameUtils {
     offsetX = 0,
     offsetY = 0
   ) {
-    // GameUtils.printShape(shape);
-    // const shapePath = GameUtils.shape2Path(shape, gridSize, gridBorderRadius, offsetX, offsetY); // 计算底图
+
     const shapeFillNum: number[][] = Array(shape.length)
       .fill(0)
       .map(() => Array(shape[0].length).fill(99));
+
+    
     // 找出所有的洞
     let minHoleIndex = 0;
     const replaceNum = (from: number, to: number) => {
@@ -587,6 +588,9 @@ export default class GameUtils {
           }
           if (max < 99 && max > shapeFillNum[sri][sci]) {
             replaceNum(max, shapeFillNum[sri][sci]);
+          }
+          if (min < 99 && min > shapeFillNum[sri][sci]) {
+            replaceNum(min, shapeFillNum[sri][sci]);
           }
         }
       }
@@ -666,16 +670,6 @@ export default class GameUtils {
     return Math.min(Math.max(gridSize, minGridSize), maxGridSize);
   };
 
-  // static printShape = (shape: Shape) => {
-  //   console.log('>>>>>>>>>>>>>>>>');
-  //   for (let sri = 0; sri < shape.length; sri++) {
-  //     let str = '';
-  //     for (let sci = 0; sci < shape[sri].length; sci++) {
-  //       str += shape[sri][sci] ? '  1' : '  0';
-  //     }
-  //     console.log(str);
-  //   }
-  // };
 }
 
 function printShapeFillNum(shapeFillNum: number[][]) {
