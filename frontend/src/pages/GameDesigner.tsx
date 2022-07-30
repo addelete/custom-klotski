@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { KeyboardEvent, useEffect, useMemo, useRef } from 'react';
 import { useMemoizedFn, useSetState, useUpdateEffect } from 'ahooks';
 import produce from 'immer';
 import { Group, Layer, Path, Rect, Stage } from 'react-konva';
@@ -44,7 +44,7 @@ function GameDesignerPage() {
         solveLoading: boolean;
     }>({
         rows: 5,
-        cols: 4,
+        cols: 9,
         gridSize: 0,
         pieceList: [],
         editingPieceIndex: -1,
@@ -70,6 +70,17 @@ function GameDesignerPage() {
 
     const mouseOverPosStrRef = useRef<number[]>([-1, -1])
 
+    useEffect(() => {
+        const copyGame = (ev: globalThis.KeyboardEvent) => {
+            if (ev.metaKey && ev.key === 'c') {
+                makeGameData()
+                navigator.clipboard.writeText(JSON.stringify(currentGame))
+                console.log('copy game data to clipboard')
+            }
+        }
+        document.addEventListener('keydown', copyGame)
+        return () => document.removeEventListener('keydown', copyGame)
+    }, [])
 
 
     // 从路由中获取布局和游戏数据
@@ -266,7 +277,7 @@ function GameDesignerPage() {
             }
         }
 
-        
+
 
         if (
             !board[rowIndex][colIndex] &&
@@ -607,7 +618,7 @@ function GameDesignerPage() {
 
 
     const editingPiecePath = useMemo(() => {
-        
+
         const piece = state.pieceList[state.editingPieceIndex]
         if (!piece) {
             return []
@@ -630,16 +641,16 @@ function GameDesignerPage() {
             state.gridSize / 10,
         )
 
-        
-
     }, [state.gridSize, state.pieceList, state.editingPieceIndex, state.mouseOverPos, state.mouseOverPosWillAction])
 
     const changeRowsOrCols = useMemoizedFn((rowsOrCols: 'rows' | 'cols', value: string) => {
-        let newValue = parseInt(value.length > 0 ? value[value.length - 1] : '2')
+
+        let newValue = parseInt(value)
         if (isNaN(newValue)) {
             return
         }
-        newValue = Math.min(Math.max(newValue, 2), 9)
+
+        newValue = Math.min(Math.max(newValue, 2), 99)
 
         setState(produce(draft => {
             draft[rowsOrCols] = newValue

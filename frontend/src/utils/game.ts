@@ -438,11 +438,12 @@ export default class GameUtils {
     offsetX = 0,
     offsetY = 0
   ) {
+    const cols = shapeFilledNum[0].length + 1
     const findStartPoint = (shape: number[][]): number | undefined => {
       for (let i = 0; i < shape.length; i++) {
         for (let j = 0; j < shape[i].length; j++) {
-          if (shape[i][j] === 99) {
-            return i * 10 + j;
+          if (shape[i][j] === 9999) {
+            return i * cols + j;
           }
         }
       }
@@ -453,7 +454,7 @@ export default class GameUtils {
     if (startPoint === undefined) return '';
     const points = [startPoint];
     const pointToPos = (point: number) => {
-      return [Math.floor(point / 10), point % 10];
+      return [Math.floor(point / cols), point % cols];
     };
     while (true) {
       const prevPoint = points.length > 1 ? points[points.length - 2] : null;
@@ -466,13 +467,13 @@ export default class GameUtils {
       const grid4 = shapeFilledNum[currentPos[0]]?.[currentPos[1]] || -1;
       let nextPoint: number | undefined;
      
-      if (grid1 + grid2 === 98 && currentPoint - 10 !== prevPoint) {
-        nextPoint = currentPoint - 10;
-      } else if (grid3 + grid4 === 98 && currentPoint + 10 !== prevPoint) {
-        nextPoint = currentPoint + 10;
-      } else if (grid2 + grid3 === 98 && currentPoint - 1 !== prevPoint) {
+      if (grid1 + grid2 === 9998 && currentPoint - cols !== prevPoint) {
+        nextPoint = currentPoint - cols;
+      } else if (grid3 + grid4 === 9998 && currentPoint + cols !== prevPoint) {
+        nextPoint = currentPoint + cols;
+      } else if (grid2 + grid3 === 9998 && currentPoint - 1 !== prevPoint) {
         nextPoint = currentPoint - 1;
-      } else if (grid1 + grid4 === 98 && currentPoint + 1 !== prevPoint) {
+      } else if (grid1 + grid4 === 9998 && currentPoint + 1 !== prevPoint) {
         nextPoint = currentPoint + 1;
       }
       if (nextPoint === undefined) {
@@ -510,10 +511,10 @@ export default class GameUtils {
         // 总结点位变化与画弧的关系
         const sweepflag =
           [
-            [1, 10],
-            [10, -1],
-            [-1, -10],
-            [-10, 1],
+            [1, cols],
+            [cols, -1],
+            [-1, -cols],
+            [-cols, 1],
           ].findIndex(
             (item) => currPoint - prevPoint === item[0] && nextPoint - currPoint === item[1]
           ) > -1
@@ -551,7 +552,7 @@ export default class GameUtils {
 
     const shapeFillNum: number[][] = Array(shape.length)
       .fill(0)
-      .map(() => Array(shape[0].length).fill(99));
+      .map(() => Array(shape[0].length).fill(9999));
 
     
     // 找出所有的洞
@@ -580,16 +581,16 @@ export default class GameUtils {
             shapeFillNum[sri][sci] = -1;
           } else if (min === -1 || max === -1) {
             shapeFillNum[sri][sci] = -1;
-          } else if (min === 99) {
+          } else if (min === 9999) {
             minHoleIndex++;
             shapeFillNum[sri][sci] = minHoleIndex;
           } else {
             shapeFillNum[sri][sci] = min;
           }
-          if (max < 99 && max > shapeFillNum[sri][sci]) {
+          if (max < 9999 && max > shapeFillNum[sri][sci]) {
             replaceNum(max, shapeFillNum[sri][sci]);
           }
-          if (min < 99 && min > shapeFillNum[sri][sci]) {
+          if (min < 9999 && min > shapeFillNum[sri][sci]) {
             replaceNum(min, shapeFillNum[sri][sci]);
           }
         }
@@ -601,13 +602,13 @@ export default class GameUtils {
     let holeShapeFillNums: number[][][] = [];
     for (let ri = 0; ri < shapeFillNum.length; ri++) {
       for (let ci = 0; ci < shapeFillNum[0].length; ci++) {
-        if (shapeFillNum[ri][ci] > 0 && shapeFillNum[ri][ci] < 99) {
+        if (shapeFillNum[ri][ci] > 0 && shapeFillNum[ri][ci] < 9999) {
           if (!holeShapeFillNums[shapeFillNum[ri][ci] - 1]) {
             holeShapeFillNums[shapeFillNum[ri][ci] - 1] = Array(shapeFillNum.length)
               .fill(0)
               .map(() => Array(shapeFillNum[0].length).fill(-1));
           }
-          holeShapeFillNums[shapeFillNum[ri][ci] - 1][ri][ci] = 99;
+          holeShapeFillNums[shapeFillNum[ri][ci] - 1][ri][ci] = 9999;
         }
       }
     }

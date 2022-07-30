@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/jeandeaual/go-locale v0.0.0-20211215124046-23669fb7cbc8
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/wailsapp/wails/v2 v2.0.0-beta.38
+	github.com/wailsapp/wails/v2 v2.0.0-beta.42
 	gorm.io/driver/sqlite v1.3.2
 	gorm.io/gorm v1.23.5
 )
