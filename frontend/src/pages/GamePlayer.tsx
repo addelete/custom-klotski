@@ -49,6 +49,7 @@ export default function GamePlayerPage() {
 
   const alertRef = useRef<MyAlertRef>({} as MyAlertRef)
   const dragStart = useRef<{ x: number, y: number }>({ x: 0, y: 0 })
+  const lastZIndex = useRef<number>(999);
 
   useEffect(() => {
     const onResize = () => {
@@ -115,6 +116,8 @@ export default function GamePlayerPage() {
   }, [state.door, state.gridSize])
 
   const handleDragStart = useMemoizedFn((e: KonvaEventObject<DragEvent>) => {
+    lastZIndex.current = lastZIndex.current + 1
+    e.target.setZIndex(lastZIndex.current)
     dragStart.current = {
       x: e.evt.layerX,
       y: e.evt.layerY,
@@ -274,7 +277,7 @@ export default function GamePlayerPage() {
                       piece={piece}
                       color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
                       gridSize={state.gridSize}
-                      draggable={state.piecesNextPostions.length > 0}
+                      draggable={state.piecesNextPostions[pieceIndex]?.length > 0}
                       onDragStart={handleDragStart}
                       onDragEnd={(e) => handleDragEnd(e, pieceIndex)}
                     // showIndex
