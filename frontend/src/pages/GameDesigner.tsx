@@ -44,7 +44,7 @@ function GameDesignerPage() {
         solveLoading: boolean;
     }>({
         rows: 5,
-        cols: 9,
+        cols: 4,
         gridSize: 0,
         pieceList: [],
         editingPieceIndex: -1,
