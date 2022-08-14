@@ -13,6 +13,9 @@ export const MyButtonBase = styled(Button)<ButtonProps>(() => ({
   '&:hover': {
     backgroundColor: '#fffa6c',
   },
+  '&[disabled]': {
+    backgroundColor: '#333333',
+  }
 }));
 
 interface MyButtonProps extends ButtonProps {

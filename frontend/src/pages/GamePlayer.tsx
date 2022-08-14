@@ -1,9 +1,9 @@
 import { KonvaEventObject } from "konva/lib/Node";
 import produce from "immer";
 import { MyAlert, MyAlertRef } from "../components/MyAlert";
-import { IconButton } from "@mui/material";
+import { Icon, IconButton } from "@mui/material";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useCreation, useMemoizedFn, useSetState, useUpdateEffect } from "ahooks";
+import { useMemoizedFn, useSetState, useUpdateEffect } from "ahooks";
 import { useNavigate } from "react-router-dom";
 import { Layer, Rect, Stage } from 'react-konva';
 import { PieceItem } from '@/src/components/PieceItem';
@@ -12,10 +12,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { currentGame } from "@/src/stores/currentGame";
 import { useTranslation } from "react-i18next";
 import './GamePlayer.less'
+import { MyButton } from "../components/MyButton";
 
-
-
-type Direction = [number, number];
 
 export default function GamePlayerPage() {
   const navigate = useNavigate()
@@ -32,6 +30,8 @@ export default function GamePlayerPage() {
     door: Door;
     kingWinPos: Pos;
     gridSize: number;
+    piecesNextPostions: number[][][];
+    undoSolution: Solution;
   }>({
     name: currentGame.game.name || t("GamePlayer.unnamed"),
     stepIndex: 0,
@@ -43,17 +43,12 @@ export default function GamePlayerPage() {
     door: (currentGame.gameData as GameData).door,
     kingWinPos: (currentGame.gameData as GameData).kingWinPos,
     gridSize: 0,
+    piecesNextPostions: [],
+    undoSolution: [],
   })
 
   const alertRef = useRef<MyAlertRef>({} as MyAlertRef)
-
-  const startCoord = useCreation<{
-    x: number;
-    y: number;
-  }>(() => ({
-    x: 0,
-    y: 0
-  }), []);
+  const dragStart = useRef<{ x: number, y: number }>({ x: 0, y: 0 })
 
   useEffect(() => {
     const onResize = () => {
@@ -69,6 +64,31 @@ export default function GamePlayerPage() {
     }
   }, [state.cols, state.rows])
 
+  useEffect(() => {
+    // 构造棋盘，-1为空，其他值为棋子索引
+    const board = Array(state.rows).fill(0).map(() => Array(state.cols).fill(-1))
+    for (let i = 0; i < state.pieceList.length; i++) {
+      const piece = state.pieceList[i]
+      for (let ri = 0; ri < piece.shape.length; ri++) {
+        const row = piece.shape[ri]
+        for (let ci = 0; ci < row.length; ci++) {
+          const grid = row[ci]
+          if (grid) {
+            board[ri + piece.position[0]][ci + piece.position[1]] = i
+          }
+        }
+      }
+    }
+    // 计算每个棋子可拖动的位置
+    const piecesNextPostions = Array(state.pieceList.length).fill(0).map(() => []) as number[][][];
+    for (let i = 0; i < state.pieceList.length; i++) {
+      piecesNextPostions[i] = GameUtils.calcPieceNextPostions(board, state.pieceList[i], i);
+    }
+    setState({
+      piecesNextPostions,
+    })
+  }, [state.pieceList])
+
   useUpdateEffect(() => {
     const kingPos = state.pieceList[state.kingPieceIndex].position
     if (kingPos[0] === state.kingWinPos[0] && kingPos[1] === state.kingWinPos[1]) {
@@ -83,8 +103,6 @@ export default function GamePlayerPage() {
     navigate(-1)
   })
 
-
-
   /**
  * 布局情况
  */
@@ -96,70 +114,40 @@ export default function GamePlayerPage() {
     return GameUtils.door2Style(state.door, state.gridSize)
   }, [state.door, state.gridSize])
 
-  const handleMouseDown = useMemoizedFn((e: KonvaEventObject<MouseEvent>) => {
-    startCoord.x = e.evt.layerX
-    startCoord.y = e.evt.layerY
+  const handleDragStart = useMemoizedFn((e: KonvaEventObject<DragEvent>) => {
+    dragStart.current = {
+      x: e.evt.layerX,
+      y: e.evt.layerY,
+    }
   })
 
-  const handleMouseUp = useMemoizedFn((e: KonvaEventObject<MouseEvent>) => {
-    // 根据开始位置计算棋子索引
-    const rowIndex = Math.floor((startCoord.y - 2) / state.gridSize)
-    const colIndex = Math.floor((startCoord.x - 2) / state.gridSize)
-    const pieceIndex = state.pieceList.findIndex(piece => piece.inBoard[rowIndex][colIndex])
-    if (pieceIndex === -1) {
+
+  const handleDragEnd = useMemoizedFn((e: KonvaEventObject<DragEvent>, pieceIndex: number) => {
+    const rowDiff = Math.round((e.evt.layerY - dragStart.current.y) / state.gridSize)
+    const colDiff = Math.round((e.evt.layerX - dragStart.current.x) / state.gridSize)
+    const resetDragData = () => {
+      e.target.x(0)
+      e.target.y(0)
+    }
+    resetDragData()
+    if (rowDiff === 0 && colDiff === 0) {
       return
     }
-
-    // 根据鼠标按下与抬起的坐标变化计算方向
-    const xDiff = e.evt.layerX - startCoord.x
-    const yDiff = e.evt.layerY - startCoord.y
-    let direction: Direction;
-    if (Math.abs(xDiff) > Math.abs(yDiff)) {
-      direction = xDiff > 0 ? [0, 1] : [0, -1]
-    } else {
-      direction = yDiff > 0 ? [1, 0] : [-1, 0]
-    }
-
-    // 计算当前步骤的棋盘状态
-    const board = Array(state.rows).fill(0).map(() => Array(state.cols).fill(false))
     const piece = state.pieceList[pieceIndex]
-
-    // 把当前棋子移动后的位置放到棋盘上，如果超界则不移动
-    for (let r = 0; r < piece.shape.length; r++) {
-      for (let c = 0; c < piece.shape[r].length; c++) {
-        if (piece.shape[r][c]) {
-          const newRowIndex = r + piece.position[0] + direction[0]
-          const newColIndex = c + piece.position[1] + direction[1]
-          if (newRowIndex < 0 || newRowIndex >= state.rows || newColIndex < 0 || newColIndex >= state.cols) {
-            console.log('out of range')
-            return
-          }
-          board[newRowIndex][newColIndex] = true
-        }
-      }
+    const newPosition = [piece.position[0] + rowDiff, piece.position[1] + colDiff]
+    const movable = state.piecesNextPostions[pieceIndex].findIndex(nextPosition => {
+      return nextPosition[0] === newPosition[0] && nextPosition[1] === newPosition[1]
+    }) !== -1
+    if (!movable) {
+      return
     }
-
-    // 把其他棋子放上去，如果有棋子被挡住，则不能移动
-    for (let pieceI = 0; pieceI < state.pieceList.length; pieceI++) {
-      if (pieceI === pieceIndex) {
-        continue
-      }
-      const piece = state.pieceList[pieceI]
-      for (let r = 0; r < piece.shape.length; r++) {
-        for (let c = 0; c < piece.shape[r].length; c++) {
-          if (piece.shape[r][c] && board[r + piece.position[0]][c + piece.position[1]]) {
-            console.log('fill error')
-            return
-          }
-        }
-      }
-    }
-
+    const direction = [rowDiff, colDiff]
     setState(produce(draft => {
       draft.solution.push({
         pieceIndex,
-        direction,
+        direction: direction,
       })
+      draft.undoSolution = []
       draft.stepIndex++
       draft.pieceList[pieceIndex] = GameUtils.pieceCalcInBoard({
         shape: piece.shape,
@@ -169,6 +157,59 @@ export default function GamePlayerPage() {
     }))
 
   })
+
+  const restart = useMemoizedFn(() => {
+    setState({
+      stepIndex: 0,
+      solution: [],
+      undoSolution: [],
+      pieceList: (currentGame.gameData as GameData).pieceList,
+    })
+  })
+
+  const undo = useMemoizedFn(() => {
+    const step = state.solution[state.stepIndex - 1]
+    const pieceIndex = step.pieceIndex
+    const piece = state.pieceList[pieceIndex]
+    const stepIndex = state.stepIndex - 1
+    const undoSolution = state.solution.slice(stepIndex)
+    const solution = state.solution.slice(0, stepIndex)
+    const newPiece = GameUtils.pieceCalcInBoard({
+      shape: piece.shape,
+      position: [piece.position[0] - step.direction[0], piece.position[1] - step.direction[1]],
+      inBoard: [],
+    }, state.rows, state.cols)
+    setState(produce(draft => {
+      draft.stepIndex = stepIndex
+      draft.undoSolution = undoSolution
+      draft.solution = solution
+      draft.pieceList[pieceIndex] = newPiece
+    }))
+
+  })
+
+  const redo = useMemoizedFn(() => {
+    const stepIndex = state.stepIndex + 1
+    const undoSolution = state.undoSolution.slice(1)
+    const step = state.undoSolution[0]
+    const pieceIndex = step.pieceIndex
+    const piece = state.pieceList[pieceIndex]
+    const solution = [...state.solution, step]
+    const newPiece = GameUtils.pieceCalcInBoard({
+      shape: piece.shape,
+      position: [piece.position[0] + step.direction[0], piece.position[1] + step.direction[1]],
+      inBoard: [],
+    }, state.rows, state.cols)
+    setState(produce(draft => {
+      draft.stepIndex = stepIndex
+      draft.undoSolution = undoSolution
+      draft.solution = solution
+      draft.pieceList[pieceIndex] = newPiece
+    }))
+
+  })
+
+
 
   return (
     <div className="GamePlayerPage">
@@ -197,8 +238,6 @@ export default function GamePlayerPage() {
               <Stage
                 width={state.gridSize * state.cols + 4}
                 height={state.gridSize * state.rows + 4}
-                onMouseDown={handleMouseDown}
-                onMouseUp={handleMouseUp}
               >
                 {/* 背景 */}
                 <Layer>
@@ -228,18 +267,29 @@ export default function GamePlayerPage() {
                   ))}
                 </Layer>
                 {/* 砖块 */}
-                {state.pieceList.map((piece, pieceIndex) => (
-                  <PieceItem
-                    key={pieceIndex}
-                    piece={piece}
-                    color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
-                    gridSize={state.gridSize}
-                    x={2}
-                    y={2}
-                  />
-                ))}
+                <Layer x={2} y={2}>
+                  {state.pieceList.map((piece, pieceIndex) => (
+                    <PieceItem
+                      key={pieceIndex}
+                      piece={piece}
+                      color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
+                      gridSize={state.gridSize}
+                      draggable={state.piecesNextPostions.length > 0}
+                      onDragStart={handleDragStart}
+                      onDragEnd={(e) => handleDragEnd(e, pieceIndex)}
+                    // showIndex
+                    // pieceIndex={pieceIndex}
+                    />
+                  ))}
+                </Layer>
               </Stage>
             </div>
+          </div>
+          <div className='stepActions'>
+            <MyButton onClick={restart}>{t("GamePlayer.restart")}</MyButton>
+            <span className='stepIndex'>{state.stepIndex}步</span>
+            <MyButton onClick={undo} disabled={state.stepIndex === 0}>{t("GamePlayer.undo")}</MyButton>
+            <MyButton onClick={redo} disabled={state.undoSolution.length === 0}>{t("GamePlayer.redo")}</MyButton>
           </div>
         </div>
       </div>

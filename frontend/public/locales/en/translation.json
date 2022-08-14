@@ -69,6 +69,9 @@
     "failedToDeleteTag": "Failed to delete tag"
   }, 
   "GamePlayer": {
+    "undo": "Undo",
+    "redo": "Redo",
+    "restart": "Restart",
     "unnamed": "Unnamed",
     "win": "Congratulations, you've won!"
   },

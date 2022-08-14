@@ -1,4 +1,4 @@
-import React, { KeyboardEvent, useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useMemoizedFn, useSetState, useUpdateEffect } from 'ahooks';
 import produce from 'immer';
 import { Group, Layer, Path, Rect, Stage } from 'react-konva';
@@ -813,16 +813,17 @@ function GameDesignerPage() {
                                     ))}
                                 </Layer>
                                 {/* 砖块 */}
-                                {state.pieceList.map((piece, pieceIndex) => (
-                                    <PieceItem
-                                        key={pieceIndex}
-                                        piece={piece}
-                                        color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
-                                        gridSize={state.gridSize}
-                                        x={2}
-                                        y={2}
-                                    />
-                                ))}
+                                <Layer x={2} y={2}>
+                                    {state.pieceList.map((piece, pieceIndex) => (
+                                        <PieceItem
+                                            key={pieceIndex}
+                                            piece={piece}
+                                            color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
+                                            gridSize={state.gridSize}
+                                        />
+                                    ))}
+                                </Layer>
+
                                 {/* <Layer x={2} y={2}>
 
                                 </Layer> */}

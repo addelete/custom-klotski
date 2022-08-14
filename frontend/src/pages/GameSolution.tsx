@@ -154,14 +154,16 @@ export default function GameSolutionPage() {
                   ))}
                 </Layer>
                 {/* 砖块 */}
-                {state.pieceList.map((piece, pieceIndex) => (
-                  <PieceItem
-                    key={pieceIndex}
-                    piece={piece}
-                    color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
-                    gridSize={state.gridSize}
-                  />
-                ))}
+                <Layer>
+                  {state.pieceList.map((piece, pieceIndex) => (
+                    <PieceItem
+                      key={pieceIndex}
+                      piece={piece}
+                      color={pieceIndex === state.kingPieceIndex ? '#fffb00' : '#0ed07e'}
+                      gridSize={state.gridSize}
+                    />
+                  ))}
+                </Layer>
               </Stage>
             </div>
           </div>

@@ -69,6 +69,9 @@
     "failedToDeleteTag": "标签删除失败"
   }, 
   "GamePlayer": {
+    "undo": "撤销",
+    "redo": "重做",
+    "restart": "重新开始",
     "unnamed": "未命名",
     "win": "恭喜你，成功了！"
   },

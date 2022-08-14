@@ -307,7 +307,7 @@ export default class GameUtils {
         borderSize
       );
       const piecePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      piecePath.setAttribute('d', paths.join(" "));
+      piecePath.setAttribute('d', paths.join(' '));
       piecePath.setAttribute('fill', i === gameData.kingPieceIndex ? '#fffb00' : '#0ed07e');
       piecePath.setAttribute('stroke', '#000');
       piecePath.setAttribute('stroke-width', '2');
@@ -438,7 +438,7 @@ export default class GameUtils {
     offsetX = 0,
     offsetY = 0
   ) {
-    const cols = shapeFilledNum[0].length + 1
+    const cols = shapeFilledNum[0].length + 1;
     const findStartPoint = (shape: number[][]): number | undefined => {
       for (let i = 0; i < shape.length; i++) {
         for (let j = 0; j < shape[i].length; j++) {
@@ -466,7 +466,7 @@ export default class GameUtils {
       const grid3 = shapeFilledNum[currentPos[0]]?.[currentPos[1] - 1] || -1;
       const grid4 = shapeFilledNum[currentPos[0]]?.[currentPos[1]] || -1;
       let nextPoint: number | undefined;
-     
+
       if (grid1 + grid2 === 9998 && currentPoint - cols !== prevPoint) {
         nextPoint = currentPoint - cols;
       } else if (grid3 + grid4 === 9998 && currentPoint + cols !== prevPoint) {
@@ -549,12 +549,10 @@ export default class GameUtils {
     offsetX = 0,
     offsetY = 0
   ) {
-
     const shapeFillNum: number[][] = Array(shape.length)
       .fill(0)
       .map(() => Array(shape[0].length).fill(9999));
 
-    
     // 找出所有的洞
     let minHoleIndex = 0;
     const replaceNum = (from: number, to: number) => {
@@ -671,6 +669,84 @@ export default class GameUtils {
     return Math.min(Math.max(gridSize, minGridSize), maxGridSize);
   };
 
+  static calcPieceNextPostions = (
+    // result: number[][],
+    board: number[][],
+    piece: Piece,
+    pieceIndex: number
+    // positionsForCheck
+  ): number[][] => {
+    const result: number[][] = [];
+    const checkedPosMap = new Set();
+    const positions = [
+      [piece.position[0], piece.position[1] + 1],
+      [piece.position[0] + 1, piece.position[1]],
+      [piece.position[0], piece.position[1] - 1],
+      [piece.position[0] - 1, piece.position[1]],
+    ];
+    const positionToPos = (position: number[]) => {
+      return position[0] * board[0].length + position[1];
+    }
+    checkedPosMap.add(positionToPos(piece.position));
+    // for (let i = 0; i < positions.length; i++) {
+    //   checkedPosMap.add(positionToPos(positions[i]));
+    // }
+    const checkPositionMovable = (position: number[]) => {
+      let movable = true;
+      for (let ri = 0; ri < piece.shape.length; ri++) {
+        for (let ci = 0; ci < piece.shape[0].length; ci++) {
+          if (!piece.shape[ri][ci]) {
+            continue;
+          }
+          const rowIndex = position[0] + ri;
+          const colIndex = position[1] + ci;
+          if (
+            rowIndex < 0 ||
+            rowIndex >= board.length ||
+            colIndex < 0 ||
+            colIndex >= board[0].length
+          ) {
+            movable = false;
+            break;
+          }
+          const beforePieceIndex = board[rowIndex][colIndex];
+          if (beforePieceIndex > -1 && beforePieceIndex !== pieceIndex) {
+            movable = false;
+            break;
+          }
+        }
+        if (!movable) {
+          break;
+        }
+      }
+      return movable;
+    };
+
+    while(true) {
+      const position = positions.shift();
+      if (!position) {
+        break;
+      }
+      const movable = checkPositionMovable(position)
+      checkedPosMap.add(positionToPos(position));
+      if(movable) {
+        result.push(position);
+        const nextPositions = [
+          [position[0], position[1] + 1],
+          [position[0] + 1, position[1]],
+          [position[0], position[1] - 1],
+          [position[0] - 1, position[1]],
+        ]
+        for (let i = 0; i < nextPositions.length; i++) {
+          const nextPosition = nextPositions[i];
+          if (!checkedPosMap.has(positionToPos(nextPosition))) {
+            positions.push(nextPosition);
+          }
+        }
+      }
+    }
+    return result;
+  };
 }
 
 function printShapeFillNum(shapeFillNum: number[][]) {
