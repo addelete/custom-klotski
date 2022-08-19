@@ -157,31 +157,42 @@ export default function GamePlayerPage() {
               }
             }
           }
-          const wrongDirs = {
-            top: !points[0].inRange && !points[1].inRange,
-            right: !points[1].inRange && !points[2].inRange,
-            bottom: !points[2].inRange && !points[3].inRange,
-            left: !points[0].inRange && !points[3].inRange,
-          }
-          if (!points[0] && !points[1] && !points[2] && !points[3]) {
+          
+          if (!points[0].inRange && !points[1].inRange && !points[2].inRange && !points[3].inRange) {
             return {
               x: Math.round(lastDragMove.current.x / state.gridSize) * state.gridSize,
               y: Math.round(lastDragMove.current.y / state.gridSize) * state.gridSize,
             }
           } else {
             let x = pos.x
-            if (wrongDirs.left) {
+            if (!points[0].inRange && !points[3].inRange) {
               x = Math.ceil(pos.x / state.gridSize) * state.gridSize
             }
-            if (wrongDirs.right) {
+            if (!points[1].inRange && !points[2].inRange) {
               x = Math.floor(pos.x / state.gridSize) * state.gridSize
             }
             let y = pos.y
-            if (wrongDirs.top) {
+            if (!points[0].inRange && !points[1].inRange) {
               y = Math.ceil(pos.y / state.gridSize) * state.gridSize
             }
-            if (wrongDirs.bottom) {
+            if (!points[2].inRange && !points[3].inRange) {
               y = Math.floor(pos.y / state.gridSize) * state.gridSize
+            }
+            if(!points[0].inRange && points[1].inRange && points[2].inRange && points[3].inRange){
+              x = Math.ceil(lastDragMove.current.x / state.gridSize) * state.gridSize
+              y = Math.ceil(lastDragMove.current.y / state.gridSize) * state.gridSize
+            }
+            if(points[0].inRange && !points[1].inRange && points[2].inRange && points[3].inRange){
+              x = Math.floor(lastDragMove.current.x / state.gridSize) * state.gridSize
+              y = Math.ceil(lastDragMove.current.y / state.gridSize) * state.gridSize
+            }
+            if(points[0].inRange && points[1].inRange && !points[2].inRange && points[3].inRange){
+              x = Math.floor(lastDragMove.current.x / state.gridSize) * state.gridSize
+              y = Math.floor(lastDragMove.current.y / state.gridSize) * state.gridSize
+            }
+            if(points[0].inRange && points[1].inRange && points[2].inRange && !points[3].inRange){
+              x = Math.ceil(lastDragMove.current.x / state.gridSize) * state.gridSize
+              y = Math.floor(lastDragMove.current.y / state.gridSize) * state.gridSize
             }
             lastDragMove.current = { x, y }
             return {
@@ -319,20 +330,11 @@ export default function GamePlayerPage() {
             ) : null}
             <div className='canvas'>
               <Stage
-                width={state.gridSize * state.cols + 4}
-                height={state.gridSize * state.rows + 4}
+                width={state.gridSize * state.cols}
+                height={state.gridSize * state.rows}
               >
-                {/* 背景 */}
-                <Layer>
-                  <Rect
-                    width={state.gridSize * state.cols + 4}
-                    height={state.gridSize * state.rows + 4}
-                    fill='#000'
-                    cornerRadius={state.gridSize / 8}
-                  />
-                </Layer>
                 {/* 棋盘 */}
-                <Layer x={2} y={2}>
+                <Layer>
                   {board.map((row, rowIndex) => (
                     row.map((grid, colIndex) => (
                       <Rect
@@ -350,7 +352,7 @@ export default function GamePlayerPage() {
                   ))}
                 </Layer>
                 {/* 砖块 */}
-                <Layer x={2} y={2}>
+                <Layer>
                   {state.pieceList.map((piece, pieceIndex) => (
                     <PieceItem
                       key={pieceIndex}
