@@ -634,7 +634,7 @@ export default class GameUtils {
     };
     const width = door.xSize * gridSize;
     const height = door.ySize * gridSize;
-    const start = door.startIndex * gridSize + 2 + 16;
+    const start = door.startIndex * gridSize + 16;
     switch (door.placement) {
       case 'top':
         style.top = 0;

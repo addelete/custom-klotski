@@ -123,20 +123,12 @@ export default function GameSolutionPage() {
             ) : null}
             <div className='canvas'>
               <Stage
-                width={state.gridSize * state.cols + 4}
-                height={state.gridSize * state.rows + 4}
+                width={state.gridSize * state.cols}
+                height={state.gridSize * state.rows}
               >
-                {/* 背景 */}
-                <Layer>
-                  <Rect
-                    width={state.gridSize * state.cols + 4}
-                    height={state.gridSize * state.rows + 4}
-                    fill='#000'
-                    cornerRadius={state.gridSize / 8}
-                  />
-                </Layer>
+  
                 {/* 棋盘 */}
-                <Layer x={2} y={2}>
+                <Layer>
                   {board.map((row, rowIndex) => (
                     row.map((grid, colIndex) => (
                       <Rect

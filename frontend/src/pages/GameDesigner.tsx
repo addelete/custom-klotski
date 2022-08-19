@@ -212,8 +212,8 @@ function GameDesignerPage() {
 
 
     const handleMouseMoveBoard = useMemoizedFn((e: KonvaEventObject<MouseEvent>) => {
-        const rowIndex = Math.floor((e.evt.layerY - 2) / state.gridSize);
-        const colIndex = Math.floor((e.evt.layerX - 2) / state.gridSize);
+        const rowIndex = Math.floor((e.evt.layerY) / state.gridSize);
+        const colIndex = Math.floor((e.evt.layerX) / state.gridSize);
         if (board[rowIndex]?.[colIndex] === undefined) {
             setMouseOverPos(undefined)
             return
@@ -353,8 +353,8 @@ function GameDesignerPage() {
 
     const handleContextMenuBoard = useMemoizedFn((e: KonvaEventObject<MouseEvent>) => {
         e.evt.preventDefault()
-        const rowIndex = Math.floor((e.evt.layerY - 2) / state.gridSize);
-        const colIndex = Math.floor((e.evt.layerX - 2) / state.gridSize);
+        const rowIndex = Math.floor((e.evt.layerY) / state.gridSize);
+        const colIndex = Math.floor((e.evt.layerX) / state.gridSize);
         const pieceIndex = state.pieceList.findIndex(piece => piece.inBoard[rowIndex]?.[colIndex])
         if (pieceIndex > -1) {
             setState({
@@ -497,25 +497,25 @@ function GameDesignerPage() {
         let startIndex: number;
         if (x > 16 && x < width - 16 && y > 0 && y < 16) {
             placement = 'top'
-            startIndex = Math.floor((x - 18) / state.gridSize)
+            startIndex = Math.floor((x - 16) / state.gridSize)
             if (startIndex + state.door.xSize > state.cols) {
                 startIndex = state.cols - state.door.xSize
             }
         } else if (x > width - 16 && x < width && y > 16 && y < height) {
             placement = 'right'
-            startIndex = Math.floor((y - 18) / state.gridSize)
+            startIndex = Math.floor((y - 16) / state.gridSize)
             if (startIndex + state.door.ySize > state.rows) {
                 startIndex = state.rows - state.door.ySize
             }
         } else if (x > 16 && x < width - 16 && y > height - 16 && y < height) {
             placement = 'bottom'
-            startIndex = Math.floor((x - 18) / state.gridSize)
+            startIndex = Math.floor((x - 16) / state.gridSize)
             if (startIndex + state.door.xSize > state.cols) {
                 startIndex = state.cols - state.door.xSize
             }
         } else {
             placement = 'left'
-            startIndex = Math.floor((y - 18) / state.gridSize)
+            startIndex = Math.floor((y - 16) / state.gridSize)
             if (startIndex + state.door.ySize > state.rows) {
                 startIndex = state.rows - state.door.ySize
             }
@@ -778,24 +778,16 @@ function GameDesignerPage() {
                         ) : null}
                         <div className='canvas'>
                             <Stage
-                                width={state.gridSize * state.cols + 4}
-                                height={state.gridSize * state.rows + 4}
+                                width={state.gridSize * state.cols}
+                                height={state.gridSize * state.rows}
                                 onMouseDown={handleMouseDownBoard}
                                 onMouseMove={handleMouseMoveBoard}
                                 onMouseLeave={handleMouseLeaveBoard}
                                 onContextMenu={handleContextMenuBoard}
                             >
-                                {/* 背景 */}
-                                <Layer>
-                                    <Rect
-                                        width={state.gridSize * state.cols + 4}
-                                        height={state.gridSize * state.rows + 4}
-                                        fill='#000'
-                                        cornerRadius={state.gridSize / 8}
-                                    />
-                                </Layer>
+
                                 {/* 棋盘 */}
-                                <Layer x={2} y={2}>
+                                <Layer >
                                     {board.map((row, rowIndex) => (
                                         row.map((grid, colIndex) => (
                                             <Rect
@@ -813,7 +805,7 @@ function GameDesignerPage() {
                                     ))}
                                 </Layer>
                                 {/* 砖块 */}
-                                <Layer x={2} y={2}>
+                                <Layer >
                                     {state.pieceList.map((piece, pieceIndex) => (
                                         <PieceItem
                                             key={pieceIndex}
@@ -824,11 +816,9 @@ function GameDesignerPage() {
                                     ))}
                                 </Layer>
 
-                                {/* <Layer x={2} y={2}>
-
-                                </Layer> */}
+             
                                 {/* 操作高亮 */}
-                                <Layer x={2} y={2}>
+                                <Layer >
                                     {state.mouseOverPos && state.mouseOverPosWillAction === 'create' ? (
                                         <Rect
                                             x={state.mouseOverPos[1] * state.gridSize}
@@ -841,7 +831,7 @@ function GameDesignerPage() {
                                         />
                                     ) : null}
                                 </Layer>
-                                <Layer x={2} y={2}>
+                                <Layer >
                                     {editingPiecePath.map((pathItem, index) => (
                                         <Group key={index}>
                                             <Path
