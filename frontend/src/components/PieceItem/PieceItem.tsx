@@ -8,6 +8,7 @@ type PieceItemProps = {
   color: string;
   gridSize: number,
   draggable?: boolean;
+  dragBoundFunc?: (pos: Konva.Vector2d) => Konva.Vector2d;
   onDragStart?: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragEnd?: (e: Konva.KonvaEventObject<DragEvent>) => void;
@@ -26,6 +27,7 @@ export function PieceItem({
   showIndex,
   pieceIndex = -1,
   draggable,
+  dragBoundFunc,
   onDragStart,
   onDragMove,
   onDragEnd,
@@ -38,13 +40,14 @@ export function PieceItem({
 
   const dragProps = {
     draggable,
+    dragBoundFunc,
     onDragStart,
     onDragMove,
     onDragEnd,
   };
 
   return (
-    <Group x={x} y={y} {...dragProps}>
+    <Group x={x} y={y} {...dragProps} >
       <Path
         fill={color}
         strokeWidth={3}

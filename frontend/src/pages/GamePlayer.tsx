@@ -1,7 +1,7 @@
 import { KonvaEventObject } from "konva/lib/Node";
 import produce from "immer";
 import { MyAlert, MyAlertRef } from "../components/MyAlert";
-import { Icon, IconButton } from "@mui/material";
+import { IconButton } from "@mui/material";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useMemoizedFn, useSetState, useUpdateEffect } from "ahooks";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +13,7 @@ import { currentGame } from "@/src/stores/currentGame";
 import { useTranslation } from "react-i18next";
 import './GamePlayer.less'
 import { MyButton } from "../components/MyButton";
+import { Vector2d } from "konva/lib/types";
 
 
 export default function GamePlayerPage() {
@@ -48,8 +49,8 @@ export default function GamePlayerPage() {
   })
 
   const alertRef = useRef<MyAlertRef>({} as MyAlertRef)
-  const dragStart = useRef<{ x: number, y: number }>({ x: 0, y: 0 })
   const lastZIndex = useRef<number>(999);
+  const lastDragMove = useRef<{ x: number, y: number }>({ x: 0, y: 0 })
 
   useEffect(() => {
     const onResize = () => {
@@ -115,19 +116,96 @@ export default function GamePlayerPage() {
     return GameUtils.door2Style(state.door, state.gridSize)
   }, [state.door, state.gridSize])
 
+  const piecesDragBoundFuncs = useMemo(() => {
+    const piecesDragXYRanges = state.piecesNextPostions.map((nextPostions, pieceIndex) => {
+      return [{
+        x: [0, state.gridSize],
+        y: [0, state.gridSize],
+      }, ...nextPostions.map((nextPostion) => {
+        const startX = (nextPostion[1] - state.pieceList[pieceIndex].position[1]) * state.gridSize
+        const startY = (nextPostion[0] - state.pieceList[pieceIndex].position[0]) * state.gridSize
+        return {
+          x: [startX, startX + state.gridSize],
+          y: [startY, startY + state.gridSize],
+        }
+      })]
+    })
+
+    const result: (((pos: Vector2d) => Vector2d) | undefined)[] = []
+    for (let i = 0; i < state.piecesNextPostions.length; i++) {
+      if (state.piecesNextPostions[i].length > 0) {
+        result[i] = function (pos: Vector2d) {
+          const points = [
+            { x: 0, y: 0, inRange: false }, // 左上角
+            { x: state.gridSize, y: 0, inRange: false }, // 右上角
+            { x: state.gridSize, y: state.gridSize, inRange: false }, // 右下角
+            { x: 0, y: state.gridSize, inRange: false }, // 左下角
+          ];
+          for (let j = 0; j < piecesDragXYRanges[i].length; j++) {
+            const range = piecesDragXYRanges[i][j]
+            for (let k = 0; k < points.length; k++) {
+              if (points[k].inRange) {
+                continue;
+              }
+              if (
+                range.x[0] <= points[k].x + pos.x &&
+                points[k].x + pos.x <= range.x[1] &&
+                range.y[0] <= points[k].y + pos.y &&
+                points[k].y + pos.y <= range.y[1]
+              ) {
+                points[k].inRange = true
+              }
+            }
+          }
+          const wrongDirs = {
+            top: !points[0].inRange && !points[1].inRange,
+            right: !points[1].inRange && !points[2].inRange,
+            bottom: !points[2].inRange && !points[3].inRange,
+            left: !points[0].inRange && !points[3].inRange,
+          }
+          if (wrongDirs.top && wrongDirs.right && wrongDirs.bottom && wrongDirs.left) {
+            return {
+              x: Math.round(lastDragMove.current.x / state.gridSize) * state.gridSize,
+              y: Math.round(lastDragMove.current.y / state.gridSize) * state.gridSize,
+            }
+            
+          }
+
+          let x = pos.x
+          if (wrongDirs.left) {
+            x = Math.ceil(pos.x / state.gridSize) * state.gridSize
+          }
+          if (wrongDirs.right) {
+            x = Math.floor(pos.x / state.gridSize) * state.gridSize
+          }
+          let y = pos.y
+          if (wrongDirs.top) {
+            y = Math.ceil(pos.y / state.gridSize) * state.gridSize
+          }
+          if (wrongDirs.bottom) {
+            y = Math.floor(pos.y / state.gridSize) * state.gridSize
+          }
+          lastDragMove.current = { x, y }
+          return {
+            x,
+            y,
+          }
+        }
+      }
+    }
+    return result;
+  }, [state.piecesNextPostions])
+
   const handleDragStart = useMemoizedFn((e: KonvaEventObject<DragEvent>) => {
     lastZIndex.current = lastZIndex.current + 1
     e.target.setZIndex(lastZIndex.current)
-    dragStart.current = {
-      x: e.evt.layerX,
-      y: e.evt.layerY,
-    }
+    lastDragMove.current = { x: 0, y: 0 }
   })
 
-
   const handleDragEnd = useMemoizedFn((e: KonvaEventObject<DragEvent>, pieceIndex: number) => {
-    const rowDiff = Math.round((e.evt.layerY - dragStart.current.y) / state.gridSize)
-    const colDiff = Math.round((e.evt.layerX - dragStart.current.x) / state.gridSize)
+    const diff = e.target.absolutePosition()
+    const rowDiff = Math.round(diff.y / state.gridSize)
+    const colDiff = Math.round(diff.x / state.gridSize)
     const resetDragData = () => {
       e.target.x(0)
       e.target.y(0)
@@ -175,7 +253,8 @@ export default function GamePlayerPage() {
     const pieceIndex = step.pieceIndex
     const piece = state.pieceList[pieceIndex]
     const stepIndex = state.stepIndex - 1
-    const undoSolution = state.solution.slice(stepIndex)
+    const undoSolution = [step, ...state.undoSolution]
+
     const solution = state.solution.slice(0, stepIndex)
     const newPiece = GameUtils.pieceCalcInBoard({
       shape: piece.shape,
@@ -279,9 +358,10 @@ export default function GamePlayerPage() {
                       gridSize={state.gridSize}
                       draggable={state.piecesNextPostions[pieceIndex]?.length > 0}
                       onDragStart={handleDragStart}
+                      dragBoundFunc={piecesDragBoundFuncs[pieceIndex]}
                       onDragEnd={(e) => handleDragEnd(e, pieceIndex)}
-                    // showIndex
-                    // pieceIndex={pieceIndex}
+                      showIndex
+                      pieceIndex={pieceIndex}
                     />
                   ))}
                 </Layer>

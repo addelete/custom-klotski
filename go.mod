@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/jeandeaual/go-locale v0.0.0-20211215124046-23669fb7cbc8
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/wailsapp/wails/v2 v2.0.0-beta.42
+	github.com/wailsapp/wails/v2 v2.0.0-beta.43
 	gorm.io/driver/sqlite v1.3.2
 	gorm.io/gorm v1.23.5
 )
@@ -37,5 +37,3 @@ require (
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
-
-// replace github.com/wailsapp/wails/v2 v2.0.0-beta.37 => /Users/xiao/go/pkg/mod/github.com/wailsapp/wails/v2@v2.0.0-beta.37
